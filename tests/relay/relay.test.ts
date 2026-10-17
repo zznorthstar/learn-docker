@@ -53,7 +53,7 @@ function browser(labId: string, secret: string) {
 }
 
 beforeAll(async () => {
-  wrangler = spawn('node_modules/.bin/wrangler', ['dev', '--config', 'worker/wrangler.jsonc', '--port', String(PORT), '--ip', '127.0.0.1', '--local', '--inspector-port', String(PORT + 100), '--persist-to', '.wrangler/test-state'], { stdio: ['ignore', 'pipe', 'pipe'], detached: true, env: { ...process.env, NO_COLOR: '1', WRANGLER_SEND_METRICS: 'false' } });
+  wrangler = spawn('node_modules/.bin/wrangler', ['dev', '--port', String(PORT), '--ip', '127.0.0.1', '--local', '--inspector-port', String(PORT + 100), '--persist-to', '.wrangler/test-state'], { stdio: ['ignore', 'pipe', 'pipe'], detached: true, env: { ...process.env, NO_COLOR: '1', WRANGLER_SEND_METRICS: 'false' } });
   let log = '';
   wrangler.stdout!.on('data', (d) => (log += d));
   wrangler.stderr!.on('data', (d) => (log += d));

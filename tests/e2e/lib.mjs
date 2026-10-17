@@ -7,7 +7,7 @@ import { fileURLToPath } from 'node:url';
 export const root = path.join(path.dirname(fileURLToPath(import.meta.url)), '..', '..');
 
 export async function startServer(port = Number(process.env.E2E_PORT ?? 38792)) {
-  const proc = spawn(path.join(root, 'node_modules/.bin/wrangler'), ['dev', '--config', 'worker/wrangler.jsonc', '--port', String(port), '--ip', '127.0.0.1', '--local', '--inspector-port', String(port + 100), '--persist-to', '.wrangler/e2e-state'], {
+  const proc = spawn(path.join(root, 'node_modules/.bin/wrangler'), ['dev', '--port', String(port), '--ip', '127.0.0.1', '--local', '--inspector-port', String(port + 100), '--persist-to', '.wrangler/e2e-state'], {
     cwd: root,
     stdio: ['ignore', 'pipe', 'pipe'],
     detached: true, // own process group, so stop() can take workerd down with it

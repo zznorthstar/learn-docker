@@ -109,7 +109,7 @@ One Worker serves the static site, `/mcp` and `/ws`, with one SQLite-backed Dura
 ```bash
 npm run build
 npx wrangler login
-npm run deploy:relay        # wrangler deploy --config worker/wrangler.jsonc
+npm run deploy:relay        # wrangler deploy
 ```
 Add a custom route/domain in the dashboard or `wrangler.jsonc`. `public/_headers` ships a strict CSP (only `wasm-unsafe-eval` for the Rive runtime), nosniff, no-referrer and cache rules. Cost profile: the static assets are free-tier friendly; Durable Objects bill only while a lab is active (WebSocket hibernation is used; keep-alive pings are auto-answered without waking the object). If abused, put Cloudflare rate limiting/Turnstile in front of `/ws` (see Limitations).
 

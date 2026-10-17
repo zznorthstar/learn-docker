@@ -2,12 +2,12 @@
   // One Worker serves the static frontend (./dist), the MCP endpoint (/mcp)
   // and the browser relay socket (/ws). One Durable Object per lab holds no
   // world state: only a hash of the lab secret and the live browser socket.
-  "$schema": "../node_modules/wrangler/config-schema.json",
+  "$schema": "node_modules/wrangler/config-schema.json",
   "name": "docker-world",
-  "main": "src/index.ts",
+  "main": "worker/src/index.ts",
   "compatibility_date": "2026-10-01",
   "assets": {
-    "directory": "../dist",
+    "directory": "./dist",
     "binding": "ASSETS",
     "not_found_handling": "single-page-application"
   },

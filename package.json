@@ -6,17 +6,18 @@
   "description": "An interactive learning world for Docker, taught by your own AI over MCP.",
   "scripts": {
     "dev": "vite",
-    "dev:relay": "wrangler dev --config worker/wrangler.jsonc --port 8787",
+    "dev:relay": "wrangler dev --port 8787",
     "build": "tsc --noEmit && vite build",
     "build:rive": "node rive/gen/build.mjs",
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
     "test:e2e": "npm run build && vitest run --config vitest.e2e.config.ts",
-    "deploy:relay": "wrangler deploy --config worker/wrangler.jsonc",
+    "deploy:relay": "wrangler deploy",
     "test:relay": "vitest run --config vitest.relay.config.ts",
     "test:all": "vitest run && vitest run --config vitest.relay.config.ts && npm run test:e2e"
   },
   "devDependencies": {
+    "@cloudflare/vite-plugin": "^1.64.0",
     "@cloudflare/workers-types": "^5.20261016.1",
     "@modelcontextprotocol/sdk": "^1.32.1",
     "@types/node": "^26.6.5",
