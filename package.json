@@ -1,0 +1,35 @@
+{
+  "name": "docker-world",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "An interactive learning world for Docker, taught by your own AI over MCP.",
+  "scripts": {
+    "dev": "vite",
+    "dev:relay": "wrangler dev --config worker/wrangler.jsonc --port 8787",
+    "build": "tsc --noEmit && vite build",
+    "build:rive": "node rive/gen/build.mjs",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "test:e2e": "npm run build && vitest run --config vitest.e2e.config.ts",
+    "deploy:relay": "wrangler deploy --config worker/wrangler.jsonc",
+    "test:relay": "vitest run --config vitest.relay.config.ts",
+    "test:all": "vitest run && vitest run --config vitest.relay.config.ts && npm run test:e2e"
+  },
+  "devDependencies": {
+    "@cloudflare/workers-types": "^5.20261016.1",
+    "@modelcontextprotocol/sdk": "^1.32.1",
+    "@types/node": "^26.6.5",
+    "@types/pngjs": "^6.0.5",
+    "axe-core": "^4.14.0",
+    "playwright-core": "^1.64.1",
+    "pngjs": "^7.0.0",
+    "typescript": "^7.0.2",
+    "vite": "^8.3.4",
+    "vitest": "^5.0.5",
+    "wrangler": "^4.151.1"
+  },
+  "dependencies": {
+    "@rive-app/canvas-lite": "^2.44.2"
+  }
+}

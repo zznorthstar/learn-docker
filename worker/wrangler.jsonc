@@ -1,0 +1,24 @@
+{
+  // One Worker serves the static frontend (./dist), the MCP endpoint (/mcp)
+  // and the browser relay socket (/ws). One Durable Object per lab holds no
+  // world state: only a hash of the lab secret and the live browser socket.
+  "$schema": "../node_modules/wrangler/config-schema.json",
+  "name": "docker-world",
+  "main": "src/index.ts",
+  "compatibility_date": "2026-10-01",
+  "assets": {
+    "directory": "../dist",
+    "binding": "ASSETS",
+    "not_found_handling": "single-page-application"
+  },
+  "durable_objects": {
+    "bindings": [{ "name": "LAB", "class_name": "Lab" }]
+  },
+  "migrations": [{ "tag": "v1", "new_sqlite_classes": ["Lab"] }],
+  "vars": {
+    // comma-separated extra origins allowed to open the browser socket; the
+    // Worker's own origin is always allowed. Leave empty for same-origin only.
+    "ALLOWED_ORIGINS": ""
+  },
+  "observability": { "enabled": true }
+}

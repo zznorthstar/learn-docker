@@ -1,0 +1,18 @@
+{
+  "_doc": "One colour per system, used identically by the Rive art, the SVG overlay and the UI.",
+  "runtime": "#b69cff",
+  "network": "#4fd1c5",
+  "storage": "#f6ad55",
+  "kernel": "#7ee787",
+  "resource": "#f6e05e",
+  "failure": "#ff6b6b",
+  "registry": "#63b3ed",
+  "build": "#f687b3",
+  "standard": "#a0aec0",
+  "ink": "#0b0f17",
+  "lantern": "#ffb454",
+  "sky0": "#0a0e22",
+  "sky1": "#1b1740",
+  "sky2": "#3b2a5e",
+  "horizon": "#c2527a"
+}

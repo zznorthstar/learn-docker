@@ -1,0 +1,136 @@
+{
+  "artboard": {
+    "name": "World",
+    "w": 1600,
+    "h": 900
+  },
+  "slots": [
+    {
+      "index": 0,
+      "x": 455,
+      "y": 392,
+      "w": 106.64,
+      "h": 56.76
+    },
+    {
+      "index": 1,
+      "x": 567,
+      "y": 392,
+      "w": 106.64,
+      "h": 56.76
+    },
+    {
+      "index": 2,
+      "x": 679,
+      "y": 392,
+      "w": 106.64,
+      "h": 56.76
+    },
+    {
+      "index": 3,
+      "x": 791,
+      "y": 392,
+      "w": 106.64,
+      "h": 56.76
+    },
+    {
+      "index": 4,
+      "x": 903,
+      "y": 392,
+      "w": 106.64,
+      "h": 56.76
+    },
+    {
+      "index": 5,
+      "x": 1015,
+      "y": 392,
+      "w": 106.64,
+      "h": 56.76
+    }
+  ],
+  "crew": {
+    "runner": {
+      "x": 1100,
+      "s": 0.5
+    },
+    "foreman": {
+      "x": 1178,
+      "s": 0.5
+    },
+    "santa": {
+      "x": 1298,
+      "s": 0.68
+    }
+  },
+  "anchors": {
+    "whale": {
+      "x": 910,
+      "y": 520
+    },
+    "brain": {
+      "x": 1280,
+      "y": 478
+    },
+    "ram": {
+      "x": 960,
+      "y": 520
+    },
+    "hold": {
+      "x": 700,
+      "y": 585
+    },
+    "kernel": {
+      "x": 800,
+      "y": 530
+    },
+    "santa": {
+      "x": 1298,
+      "y": 330
+    },
+    "foreman": {
+      "x": 1178,
+      "y": 340
+    },
+    "runner": {
+      "x": 1100,
+      "y": 340
+    },
+    "harbor": {
+      "x": 230,
+      "y": 570
+    },
+    "crane": {
+      "x": 270,
+      "y": 500
+    },
+    "shipyard": {
+      "x": 1380,
+      "y": 600
+    },
+    "gates": {
+      "x": 1000,
+      "y": 392
+    }
+  },
+  "vm": {
+    "level": "number",
+    "cpuLoad": "number",
+    "memPressure": "number",
+    "diskFill": "number",
+    "storm": "bool",
+    "registryUp": "number",
+    "building": "number",
+    "pull": "trigger",
+    "build": "trigger",
+    "shake": "trigger",
+    "santa": "vm",
+    "foreman": "vm",
+    "runner": "vm",
+    "slot0": "vm",
+    "slot1": "vm",
+    "slot2": "vm",
+    "slot3": "vm",
+    "slot4": "vm",
+    "slot5": "vm"
+  }
+}
