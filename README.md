@@ -149,4 +149,4 @@ Issues and PRs are welcome. Start with [CONTRIBUTING.md](CONTRIBUTING.md); pleas
 
 ## License
 
-[MIT](LICENSE) © Hamdi ZYG-ZXG
+[MIT](LICENSE) © Hamdi Bouzidi
