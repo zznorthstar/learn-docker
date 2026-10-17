@@ -84,9 +84,10 @@ describe('first visit', () => {
     expect(last).toMatch(/\/mcp/);
     expect(last).toMatch(/Authorization/);
     expect(steps.join(' ')).toMatch(/living system/);
-    // the explicit promise from the brief
+    // Explain the external AI setup before showing connection details.
     await page.click('[data-act=onb-back]');
-    expect(await page.textContent('.modal')).toMatch(/No account\. No hosted AI\. Your agent stays your agent/);
+    expect(await page.textContent('.modal')).toMatch(/two tabs next to each other/);
+    expect(await page.textContent('.modal')).toMatch(/Leave full screen/);
     await page.click('[data-act=onb-next]');
     await page.click('[data-act=onb-next]');
     await page.waitForSelector('.modal', { state: 'detached' });
@@ -129,6 +130,7 @@ describe('secret hygiene', () => {
     await page.click('[data-act=modal][data-arg=connect]');
     await page.waitForSelector('.modal');
     expect(await page.content()).not.toContain(secret);
+    await page.locator('.connection-key > summary').click();
     await page.click('[data-act=key-toggle]');
     expect(await page.content()).toContain(secret);
     await page.click('[data-act=key-toggle]');
@@ -272,6 +274,7 @@ describe('MCP <-> browser (real relay)', () => {
 
   it('what the learner does in the browser shows up in the AI event stream and activity log', async () => {
     await page.click('[aria-label^="Container cache"]');
+    await page.locator('#side details').filter({ has: page.locator('summary', { hasText: 'More experiments' }) }).locator('summary').click();
     await page.click('#side [data-act=poke] >> text=Kill PID 1');
     await page.waitForTimeout(500);
     const ua = await mcp(key, 'world_inspect', { scope: 'user_activity' });
@@ -336,7 +339,7 @@ describe('human tools: terminal, lab, experiments', () => {
     await page.fill('#term-input', 'docker run -d --name web2 -p 8081:80 -v mydata:/data nginx');
     await page.waitForTimeout(200);
     const decomp = (await page.textContent('#term-decomp')) ?? '';
-    for (const w of ['container lifecycle', 'background lifecycle', 'identity', 'port exposure', 'volume mount', 'image resolution']) expect(decomp).toContain(w);
+    for (const w of ['create + start', 'run in background', 'container name', 'host → container', 'volume mount', 'image to use']) expect(decomp).toContain(w);
     await page.press('#term-input', 'Enter');
     await page.waitForSelector('[aria-label^="Container web2"]', { timeout: 10000 });
     expect(await page.textContent('#term-out')).toMatch(/\$ docker run -d --name web2/);
@@ -443,6 +446,7 @@ describe('camera', () => {
     expect(santa.width).toBeGreaterThan(150);
     await page.click('.hits button[aria-label^="dockerd"]');
     expect(await evalApp<string>(`return app.engine.view.selected`)).toBe('daemon:dockerd');
+    await page.locator('.cam > summary').click();
     await page.click('[data-act=region][data-arg=overview]');
     await page.waitForTimeout(1000);
     expect(await page.getAttribute('#overlay', 'viewBox')).toMatch(/1600(\.0)? 900(\.0)?$/);

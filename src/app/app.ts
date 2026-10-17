@@ -44,6 +44,7 @@ export interface Toast {
 export interface UiState {
   dock: DockTab;
   dockOpen: boolean;
+  inspectorOpen: boolean;
   side: SideTab;
   modal: ModalState;
   hover: Target | null;
@@ -53,7 +54,7 @@ export interface UiState {
   whyFor: Target | null;
   showAllEvents: boolean;
   onlyProblems: boolean;
-  connectTab: 'claude-code' | 'json' | 'desktop' | 'prompt';
+  connectTab: 'claude-code' | 'json' | 'desktop' | 'prompt' | 'ai-agent';
   keyVisible: boolean;
   selfTest: { state: 'idle' | 'running' | 'ok' | 'fail'; msg: string };
   relay: RelayState;
@@ -81,7 +82,8 @@ export class App {
   slotOf = new Map<string, number>();
   ui: UiState = {
     dock: 'timeline',
-    dockOpen: true,
+    dockOpen: false,
+    inspectorOpen: false,
     side: 'object',
     modal: null,
     hover: null,
@@ -91,7 +93,7 @@ export class App {
     whyFor: null,
     showAllEvents: false,
     onlyProblems: false,
-    connectTab: 'claude-code',
+    connectTab: 'ai-agent',
     keyVisible: false,
     selfTest: { state: 'idle', msg: '' },
     relay: 'offline',
@@ -123,7 +125,7 @@ export class App {
     const { identity, fresh } = loadIdentity();
     this.identity = identity;
     this.fresh = fresh;
-    this.ui.dock = (this.prefs.dockTab as DockTab) || 'timeline';
+    this.ui.dock = ['timeline', 'events', 'terminal', 'lab'].includes(this.prefs.dockTab) ? this.prefs.dockTab as DockTab : 'timeline';
     this.ui.side = (this.prefs.sideTab as SideTab) || 'object';
     this.reducedMq = window.matchMedia?.('(prefers-reduced-motion: reduce)') ?? null;
 
@@ -298,7 +300,7 @@ export class App {
       case 'wave':
         this.rive?.fire('santa/wave');
         this.ui.banner = this.selfTestActive
-          ? { text: 'Self-test passed: browser → relay → this page → Santa.', until: Date.now() + 5000 }
+          ? { text: 'Connection works. Santa says hi.', until: Date.now() + 5000 }
           : { text: 'Your AI is connected. Santa says hi.', until: Date.now() + 6500 };
         break;
       case 'pull':
@@ -337,10 +339,6 @@ export class App {
       this.ui.banner = null;
       changed = true;
     }
-    if (this.engine.caption && now - this.engine.caption.at > 15000) {
-      this.engine.caption = null;
-      changed = true;
-    }
     const wasTrouble = this.troubleUntil > 0 && this.troubleUntil < now;
     if (wasTrouble || (this.lastActionAt && now - this.lastActionAt > 2600 && now - this.lastActionAt < 3700)) {
       if (wasTrouble) this.troubleUntil = 0;
@@ -376,6 +374,9 @@ export class App {
   }
 
   private cameraStarted = false;
+  private lastSelection: Target | null = null;
+  private captionAt = -1;
+  private captionPage = 0;
 
   /** the visible window moved: update the Rive viewport, the SVG overlay and the hit targets together */
   private applyCamera(r: Rect): void {
@@ -418,7 +419,11 @@ export class App {
       else if (d.live) key = { sel: `[data-live="${d.live}"]${d.arg ? `[data-arg="${CSS.escape(d.arg)}"]` : ''}` };
       else if (ae.getAttribute('role') === 'radio' || ae.getAttribute('role') === 'tab') key = null;
     }
+    const disclosures = new Map([...el.querySelectorAll<HTMLDetailsElement>('details[data-disclosure]')].map(d => [d.dataset.disclosure, d.open]));
     el.innerHTML = html;
+    el.querySelectorAll<HTMLDetailsElement>('details[data-disclosure]').forEach(d => {
+      if (disclosures.has(d.dataset.disclosure)) d.open = disclosures.get(d.dataset.disclosure)!;
+    });
     this.cacheKeys.set(id, html);
     if (key) (el.querySelector(key.sel) as HTMLElement | null)?.focus({ preventScroll: true });
   }
@@ -444,6 +449,17 @@ export class App {
     this.slotOf = slotOf;
     this.scene = buildScene(w, slotOf, overflow);
 
+    if (e.view.selected !== this.lastSelection) {
+      this.ui.inspectorOpen = !!e.view.selected;
+      this.lastSelection = e.view.selected;
+    }
+    const terminal = this.ui.dockOpen && this.ui.dock === 'terminal';
+    this.root.classList.toggle('terminal-active', terminal);
+    const inspector = this.ui.inspectorOpen && !terminal;
+    this.root.classList.toggle('inspector-open', inspector);
+    this.root.classList.toggle('has-modal', !!this.ui.modal);
+    this.root.querySelector<HTMLElement>('#side')!.hidden = !inspector;
+
     if (!this.dragging) this.put('#topbar', renderTopbar(this));
     this.put('#side', renderSide(this));
     this.put('#dock-tabs', renderDockTabs(this));
@@ -465,6 +481,11 @@ export class App {
     if (tab === 'events') this.put('#panel-events', renderEvents(this));
     if (tab === 'lab' && !this.dragging) this.put('#panel-lab', renderLab(this));
     if (tab === 'terminal') {
+      const input = this.root.querySelector<HTMLInputElement>('#term-input');
+      if (input) input.disabled = this.term.running;
+      const run = this.root.querySelector<HTMLButtonElement>('[data-act=term-run]');
+      if (run) run.disabled = this.term.running;
+      if (!this.term.running) this.put('#term-decomp', renderTermInput(this));
       this.put('#term-out', renderTerminalOut(this));
       const out = this.root.querySelector('#term-out');
       if (out && this.cacheKeys.get('#term-scroll') !== String(this.term.out.length)) {
@@ -493,7 +514,20 @@ export class App {
   private renderCaption(): void {
     const c = this.engine.caption;
     const b = this.ui.banner;
-    const html = `${b ? `<div class="banner" role="status"><span class="dot ok pulse"></span>${esc(b.text)}</div>` : ''}${c ? `<div class="caption" role="status"><span class="who">your AI</span><span>${esc(c.text)}</span></div>` : ''}`;
+    if (c && this.captionAt !== c.at) {
+      this.captionAt = c.at;
+      this.captionPage = 0;
+    }
+    // Keep the complete note in the engine; show one manageable beat at a time.
+    const sentences = c?.text.match(/[^.!?]+(?:[.!?]+(?=\s|$)|$)/g) ?? [];
+    const beats = sentences.flatMap(sentence => {
+      const words = sentence.trim().split(/\s+/);
+      const chunks: string[] = [];
+      for (let i = 0; i < words.length; i += 30) chunks.push(words.slice(i, i + 30).join(' '));
+      return chunks;
+    });
+    const page = Math.min(this.captionPage, Math.max(0, beats.length - 1));
+    const html = `${b ? `<div class="banner" role="status"><span class="dot ok pulse"></span>${esc(b.text)}</div>` : ''}${c ? `<div class="caption"><span class="who">your AI</span><span class="caption-text" role="status">${esc(beats[page] ?? c.text)}</span><div class="caption-nav">${beats.length > 1 ? `<button class="btn small ghost" data-act="caption-prev" aria-label="Previous sentence" ${page === 0 ? 'disabled' : ''}>←</button><span>${page + 1}/${beats.length}</span><button class="btn small" data-act="caption-next" aria-label="Next sentence" ${page === beats.length - 1 ? 'disabled' : ''}>→</button>` : ''}<button class="btn small ghost" data-act="say-clear" aria-label="Dismiss teaching note">×</button></div></div>` : ''}`;
     this.put('#stage-msg', html);
   }
 
@@ -530,6 +564,10 @@ export class App {
       if (el.dataset.live === 'filter') {
         if (el.dataset.arg === 'all') this.ui.showAllEvents = el.checked;
         if (el.dataset.arg === 'problems') this.ui.onlyProblems = el.checked;
+        this.schedule();
+      }
+      if (el.dataset.live === 'connect-client') {
+        this.ui.connectTab = el.value as UiState['connectTab'];
         this.schedule();
       }
     });
@@ -600,12 +638,18 @@ export class App {
     switch (name) {
       case 'select':
         e.select(arg as Target);
+        this.ui.inspectorOpen = true;
+        if (this.ui.dock === 'terminal') this.ui.dockOpen = false;
         this.ui.side = 'object';
         this.ui.whyFor = null;
         this.setPref('sideTab', 'object');
         break;
       case 'deselect':
         e.select(null);
+        break;
+      case 'inspector-toggle':
+        this.ui.inspectorOpen = !(this.ui.inspectorOpen && !(this.ui.dockOpen && this.ui.dock === 'terminal'));
+        if (this.ui.inspectorOpen && this.ui.dock === 'terminal') this.ui.dockOpen = false;
         break;
       case 'level':
         this.setLevel(Number(arg) as Level);
@@ -631,12 +675,14 @@ export class App {
       case 'dock':
         this.ui.dockOpen = true;
         this.ui.dock = arg as DockTab;
+        if (arg === 'terminal') this.ui.predExpanded = false;
         this.setPref('dockTab', arg!);
         this.schedule();
         if (arg === 'terminal') setTimeout(() => this.root.querySelector<HTMLInputElement>('#term-input')?.focus(), 30);
         break;
       case 'side':
         this.ui.side = arg as SideTab;
+        this.ui.inspectorOpen = true;
         this.setPref('sideTab', arg!);
         this.schedule();
         break;
@@ -644,6 +690,7 @@ export class App {
         e.setView({ labMode: !e.view.labMode });
         if (e.view.labMode) {
           this.ui.dock = 'lab';
+          this.ui.dockOpen = true;
           this.setPref('dockTab', 'lab');
         }
         break;
@@ -811,6 +858,8 @@ export class App {
         e.setView({ timeFlows: !e.view.timeFlows });
         break;
       case 'term-suggest': {
+        this.ui.dock = 'terminal';
+        this.ui.dockOpen = true;
         const inp = this.root.querySelector<HTMLInputElement>('#term-input');
         if (inp) {
           inp.value = arg ?? '';
@@ -823,8 +872,25 @@ export class App {
         this.term.out = [];
         this.schedule();
         break;
+      case 'term-run': {
+        const input = this.root.querySelector<HTMLInputElement>('#term-input');
+        if (input && !this.term.running) {
+          const command = input.value;
+          input.value = '';
+          this.onTermInput('');
+          void this.runTerminal(command);
+          input.focus();
+        }
+        break;
+      }
       case 'say-clear':
         e.say(null);
+        break;
+      case 'caption-next':
+        this.captionPage++;
+        break;
+      case 'caption-prev':
+        this.captionPage = Math.max(0, this.captionPage - 1);
         break;
       case 'noop':
         break;
@@ -855,6 +921,8 @@ export class App {
 
   openTerminal(): void {
     this.ui.dock = 'terminal';
+    this.ui.dockOpen = true;
+    this.ui.predExpanded = false;
     this.setPref('dockTab', 'terminal');
     this.schedule();
     setTimeout(() => this.root.querySelector<HTMLInputElement>('#term-input')?.focus(), 30);
@@ -883,7 +951,7 @@ export class App {
 
   /** a real end-to-end test through the relay: the page plays the role of an MCP client */
   async selfTest(): Promise<void> {
-    this.ui.selfTest = { state: 'running', msg: 'Calling your own MCP endpoint through the relay…' };
+    this.ui.selfTest = { state: 'running', msg: 'Checking the connection…' };
     this.selfTestActive = true;
     this.schedule();
     const post = async (body: unknown): Promise<{ status: number; json: any }> => {
@@ -892,12 +960,12 @@ export class App {
       return { status: r.status, json: t ? JSON.parse(t) : null };
     };
     try {
-      if (this.ui.relay !== 'online') throw new Error('The browser is not connected to the relay yet (see the status above).');
+      if (this.ui.relay !== 'online') throw new Error('Your world is still connecting. Try again in a moment.');
       const init = await post({ jsonrpc: '2.0', id: 1, method: 'initialize', params: { protocolVersion: '2025-06-18', capabilities: {}, clientInfo: { name: 'whale-lab self-test', version: '1' } } });
       if (init.status !== 200) throw new Error(`initialize returned HTTP ${init.status}`);
       const call = await post({ jsonrpc: '2.0', id: 2, method: 'tools/call', params: { name: 'world_connection_test', arguments: {} } });
       if (call.status !== 200 || call.json?.result?.isError) throw new Error('tool call failed: ' + JSON.stringify(call.json).slice(0, 160));
-      this.ui.selfTest = { state: 'ok', msg: 'Round trip works: HTTP → relay → this browser → Santa waved.' };
+      this.ui.selfTest = { state: 'ok', msg: 'Connection works. Santa got your message.' };
     } catch (e) {
       this.ui.selfTest = { state: 'fail', msg: (e as Error).message };
     } finally {
@@ -973,18 +1041,19 @@ export class App {
 
   private onTermInput(value: string): void {
     this.term.parsed = value.trim() ? parseCommand(this.engine.world, value) : null;
-    const decomp = this.root.querySelector<HTMLElement>('#term-decomp');
-    if (decomp) decomp.innerHTML = renderTermInput(this);
+    this.put('#term-decomp', renderTermInput(this));
   }
 
   private onTermKey(ev: KeyboardEvent): void {
     const input = ev.target as HTMLInputElement;
     if (ev.key === 'Enter') {
       ev.preventDefault();
-      void this.runTerminal(input.value);
+      if (this.term.running) return;
+      const command = input.value;
       input.value = '';
       this.term.parsed = null;
       this.onTermInput('');
+      void this.runTerminal(command);
     } else if (ev.key === 'ArrowUp') {
       ev.preventDefault();
       const h = this.term.history;
@@ -1002,12 +1071,14 @@ export class App {
 
   /** Execute: highlight each semantic part in turn, then perform the plan against the world. */
   async runTerminal(line: string): Promise<void> {
+    if (this.term.running) return;
     const raw = line.trim();
     if (!raw) return;
     const e = this.engine;
     this.term.history.push(raw);
     this.term.hi = -1;
     const parsed = parseCommand(e.world, raw);
+    this.term.parsed = parsed;
     e.note('terminal', `ran in the terminal: ${raw}`);
     this.term.out.push({ cmd: raw });
     if (parsed.local === 'clear') {
@@ -1028,6 +1099,7 @@ export class App {
     // light up each part of the command in order (skipped under reduced motion)
     if (!this.reduced && parsed.segs.length) {
       this.term.running = true;
+      this.schedule();
       const decomp = this.root.querySelector<HTMLElement>('#term-decomp');
       decomp?.replaceChildren();
       if (decomp) decomp.innerHTML = renderTermInput(this, parsed);
@@ -1038,6 +1110,10 @@ export class App {
       }
       await new Promise((r) => setTimeout(r, 160));
       this.term.running = false;
+      this.schedule();
+      requestAnimationFrame(() => {
+        if (this.ui.dock === 'terminal' && this.ui.dockOpen && document.activeElement === document.body) this.root.querySelector<HTMLInputElement>('#term-input')?.focus({ preventScroll: true });
+      });
     }
     if (parsed.read) {
       const out = runRead(e.world, parsed, e.visibleEvents);
@@ -1047,6 +1123,7 @@ export class App {
       return;
     }
     if (parsed.plan.length) {
+      const previousContainers = new Set(Object.keys(e.world.containers));
       const results = e.dispatchMany(raw, parsed.plan, 'user');
       for (const r of results) {
         if (r.ok) this.term.out.push({ out: r.output ?? '', cls: 'ok' });
@@ -1056,8 +1133,11 @@ export class App {
         const name = (parsed.plan[0] as { name?: string }).name;
         if (name && e.world.containers[name]?.state === 'exited') e.dispatch({ action: 'remove_container', target: `container:${name}` }, 'user', `docker rm ${name} (--rm)`);
       }
-      const w = e.world;
-      void w;
+      const created = Object.keys(e.world.containers).find(name => !previousContainers.has(name));
+      if (created) {
+        e.select(`container:${created}`);
+        e.setView({ region: 'overview', zoom: 1 });
+      }
       this.ui.dock = 'terminal';
     }
     this.schedule();

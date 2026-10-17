@@ -31,10 +31,10 @@
     "dev:relay": "wrangler dev --port 8787",
     "build": "tsc --noEmit && vite build",
     "build:rive": "node rive/gen/build.mjs",
-    "typecheck": "tsc --noEmit",
+    "typecheck": "tsc --noEmit && tsc --noEmit -p worker/tsconfig.json",
     "test": "vitest run",
     "test:e2e": "npm run build && vitest run --config vitest.e2e.config.ts",
-    "deploy:relay": "wrangler deploy",
+    "deploy:relay": "npm run build && wrangler deploy",
     "test:relay": "vitest run --config vitest.relay.config.ts",
     "test:all": "vitest run && vitest run --config vitest.relay.config.ts && npm run test:e2e"
   },

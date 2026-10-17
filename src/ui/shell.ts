@@ -12,12 +12,12 @@ const LEVEL_SHORT = ['Story', 'Objects', 'Engine', 'Process', 'Kernel', 'OCI', '
 export function renderShell(app: App): string {
   void app;
   return `
-  <a class="skip" href="#side">Skip to the inspector</a>
+  <a class="skip" href="#stage">Skip to the world</a>
   <header class="topbar" id="topbar"></header>
   <div class="main">
     <section class="left">
       <div class="stage-wrap">
-        <div class="stage" id="stage" data-rive="loading" role="group" aria-label="The Docker world: a flying whale (the host) carrying containers">
+        <div class="stage" id="stage" tabindex="-1" data-rive="loading" role="group" aria-label="The Docker world: a flying whale (the host) carrying containers">
           <img class="poster" src="/poster.webp" alt="" decoding="async" fetchpriority="high" />
           <canvas id="rive-canvas" aria-hidden="true"></canvas>
           <svg id="overlay" class="overlay" viewBox="0 0 ${LAYOUT.artboard.w} ${LAYOUT.artboard.h}" preserveAspectRatio="xMidYMid meet" aria-hidden="true"></svg>
@@ -26,8 +26,8 @@ export function renderShell(app: App): string {
           <div id="stage-cam" class="stage-cam"></div>
           <div id="legend"></div>
         </div>
+        <div id="prediction" class="predict-slot"></div>
       </div>
-      <div id="prediction" class="predict-slot"></div>
       <div id="overlay-row" class="overlay-row" role="group" aria-label="Overlays: show one system of relationships"></div>
       <div id="consequence"></div>
       <section class="dock" id="dock" aria-label="Timeline, events, terminal and lab">
@@ -36,9 +36,10 @@ export function renderShell(app: App): string {
         <div class="panel" data-panel="events" id="panel-events" role="tabpanel" hidden></div>
         <div class="panel flush" data-panel="terminal" role="tabpanel" hidden>
           <div class="term">
+            <div class="term-title"><span class="dot ok" aria-hidden="true"></span><b>whale-lab</b><span>Docker terminal · simulated</span><span class="spacer"></span><button class="btn small ghost" data-act="term-clear">Clear</button></div>
             <div class="term-out" id="term-out" tabindex="0" aria-label="Terminal output"></div>
             <div class="term-in">
-              <div class="term-line"><span class="ps" aria-hidden="true">$</span><input id="term-input" data-live="term" type="text" spellcheck="false" autocomplete="off" autocapitalize="off" aria-label="Docker command" placeholder="docker run -d --name web -p 8080:80 nginx" /></div>
+              <div class="term-line"><span class="ps" aria-hidden="true">you@whale <span>~</span> $</span><input id="term-input" data-live="term" type="text" spellcheck="false" autocomplete="off" autocapitalize="off" aria-label="Docker command" placeholder="Type a command…" /><button class="btn small" data-act="term-run" aria-label="Run Docker command">Run ↵</button></div>
               <div class="decomp" id="term-decomp" aria-live="polite"></div>
             </div>
           </div>
@@ -91,6 +92,7 @@ export function renderTopbar(app: App): string {
     <div class="top-actions">
       <button class="btn" data-act="modal" data-arg="scenarios" title="Break something on purpose"><span aria-hidden="true">${icon('bolt')}</span><span class="label">What if…</span></button>
       <button class="btn" data-act="lab-mode" aria-pressed="${v.labMode}" title="Show the experiment dials"><span aria-hidden="true">${icon('flask')}</span><span class="label">Lab</span></button>
+      <button class="btn" data-act="inspector-toggle" aria-expanded="${app.ui.inspectorOpen && !(app.ui.dockOpen && app.ui.dock === 'terminal')}" aria-controls="side"><span class="label">Explore</span><span class="label-short">Explore</span></button>
       <button class="${cls}" data-act="modal" data-arg="connect"><span class="dot ${dot}" aria-hidden="true"></span><span class="label">${esc(label)}</span><span class="label-short">${esc(link.agent ? 'AI on' : relay === 'online' ? 'Connect AI' : label.slice(0, 11))}</span></button>
       <details class="menu"><summary class="btn ghost" aria-label="More">${icon('dots')}</summary>
         <div class="menu-pop">
@@ -149,13 +151,13 @@ export function renderStageDom(app: App): string {
 }
 
 const LEGEND: Record<Level, string> = {
-  0: '<span class="metaphor">A cartoon on purpose.</span> Whale, pilot, crew: a story that is useful and deliberately wrong in places. Go deeper to see what it hides.',
-  1: 'The same scene, named the way Docker names things: host, containers, images, volumes, networks.',
-  2: 'Docker Engine internals: <b>dockerd</b> takes orders, <b>containerd</b> organises, a <b>shim</b> holds each container, <b>runc</b> launches it and leaves.',
-  3: '<span class="metaphor">The box dissolves.</span> A container is not a little VM: it is a <b>process</b> on the host.',
-  4: 'Kernel primitives: <b>namespaces</b> hide, <b>cgroups</b> limit, <b>overlayfs</b> stacks layers, <b>veth + bridge + iptables</b> connect.',
-  5: 'Open standards: images, runtimes and registries are <b>OCI specifications</b>, which is why any tool can plug in.',
-  6: 'The wider world: where Docker sits among <b>Kubernetes</b>, other engines, managed clouds and CI/CD.',
+  0: 'The whale is your machine. Click something to explore.',
+  1: 'The same world, with Docker’s real names.',
+  2: 'Meet the crew that starts and manages containers.',
+  3: 'A container is a process running on your machine.',
+  4: 'See how Linux keeps containers apart and sets their limits.',
+  5: 'Shared standards let different container tools work together.',
+  6: 'Follow Docker’s connections to Kubernetes, clouds, and CI/CD.',
 };
 
 const OVERLAY_LABEL: Record<Overlay, [string, string]> = {
@@ -174,13 +176,13 @@ export function renderLegend(app: App): string {
     const [label, color] = OVERLAY_LABEL[o];
     return `<button class="btn small" data-act="overlay" data-arg="${o}" aria-pressed="${v.overlays.includes(o)}" style="${v.overlays.includes(o) ? `border-color:${color};color:${color}` : ''}">${label}</button>`;
   }).join('');
-  return `<div class="stage-legend" aria-live="polite"><b>Level ${v.level} · ${esc(LEVEL_NAMES[v.level])}.</b> ${LEGEND[v.level]}</div><div class="stage-tools" role="group" aria-label="Overlays: show one system of relationships">${tools}</div>`;
+  return `<div class="stage-legend" aria-live="polite"><b>${esc(LEVEL_SHORT[v.level]!)}</b><span>${LEGEND[v.level]}</span></div><details class="stage-tools"><summary class="btn small">Connections</summary><div role="group" aria-label="Overlays: show one system of relationships">${tools}</div></details>`;
 }
 
 export function renderCamera(app: App): string {
   const v = app.engine.view;
   const regions = Object.keys(REGION_LABEL) as Region[];
-  return `<div role="group" aria-label="Camera" class="cam">${regions.map((r) => `<button class="btn small" data-act="region" data-arg="${r}" aria-pressed="${v.region === r}">${REGION_LABEL[r]}</button>`).join('')}<span class="zoom"><button class="btn small" data-act="zoom" data-arg="-1" aria-label="Zoom out">−</button><button class="btn small" data-act="zoom" data-arg="1" aria-label="Zoom in">+</button></span></div>`;
+  return `<details class="cam"><summary class="btn small">View · ${REGION_LABEL[v.region]}</summary><div role="group" aria-label="Camera">${regions.map((r) => `<button class="btn small" data-act="region" data-arg="${r}" aria-pressed="${v.region === r}">${REGION_LABEL[r]}</button>`).join('')}<span class="zoom"><button class="btn small" data-act="zoom" data-arg="-1" aria-label="Zoom out">−</button><button class="btn small" data-act="zoom" data-arg="1" aria-label="Zoom in">+</button></span></div></details>`;
 }
 
 export function renderOverlayRow(app: App): string {

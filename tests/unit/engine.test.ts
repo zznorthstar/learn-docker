@@ -394,12 +394,12 @@ describe('terminal: decomposition and execution', () => {
     const p = parseCommand(w, 'docker run -d --name web2 -p 8081:80 -v mydata:/data nginx');
     expect(p.error).toBeUndefined();
     const byLabel = Object.fromEntries(p.segs.map((s) => [s.text, s.label]));
-    expect(byLabel['run']).toBe('container lifecycle');
-    expect(byLabel['-d']).toBe('background lifecycle');
-    expect(byLabel['--name']).toBe('identity');
-    expect(byLabel['-p']).toBe('port exposure');
+    expect(byLabel['run']).toBe('create + start');
+    expect(byLabel['-d']).toBe('run in background');
+    expect(byLabel['--name']).toBe('container name');
+    expect(byLabel['-p']).toBe('host → container');
     expect(byLabel['-v']).toBe('volume mount');
-    expect(byLabel['nginx']).toBe('image resolution');
+    expect(byLabel['nginx']).toBe('image to use');
     expect(p.plan[0]).toMatchObject({ action: 'run_container', image: 'nginx', name: 'web2', ports: ['8081:80'], volumes: ['mydata:/data'], detach: true });
     // segments are ordered and non-overlapping
     for (let i = 1; i < p.segs.length; i++) expect(p.segs[i]!.start).toBeGreaterThanOrEqual(p.segs[i - 1]!.end);

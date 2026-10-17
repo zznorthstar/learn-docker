@@ -102,10 +102,10 @@ const BOOL_FLAGS = new Set(['-d', '--detach', '-i', '-t', '-it', '-ti', '--rm', 
 function explainFlag(flag: string, value: string | undefined): { label: string; explain: string; concept?: string } {
   switch (VALUE_FLAGS[flag] ?? flag) {
     case 'name':
-      return { label: 'identity', explain: `Names the container "${value}". On a user-defined network this is also its DNS name.`, concept: 'service-discovery' };
+      return { label: 'container name', explain: `Names the container "${value}". On a user-defined network this is also its DNS name.`, concept: 'service-discovery' };
     case 'publish': {
       const [h, c] = (value ?? '').split(':');
-      return { label: 'port exposure', explain: `Publishes host port ${h ?? '?'} to container port ${c ?? h ?? '?'} (an iptables DNAT rule). The container port must be the one the app really listens on.`, concept: 'port-publish' };
+      return { label: 'host → container', explain: `Publishes host port ${h ?? '?'} to container port ${c ?? h ?? '?'} (an iptables DNAT rule). The container port must be the one the app really listens on.`, concept: 'port-publish' };
     }
     case 'volume': {
       const bind = /^[./~]/.test(value ?? '');
@@ -135,7 +135,7 @@ function explainFlag(flag: string, value: string | undefined): { label: string; 
   switch (flag) {
     case '-d':
     case '--detach':
-      return { label: 'background lifecycle', explain: 'Run detached: return the container ID immediately instead of attaching to its output.', concept: 'lifecycle' };
+      return { label: 'run in background', explain: 'Run detached: return the container ID immediately instead of attaching to its output.', concept: 'lifecycle' };
     case '--rm':
       return { label: 'cleanup', explain: 'Remove the container automatically when it exits (its writable layer is deleted).', concept: 'writable-layer' };
     case '-it':
@@ -250,21 +250,21 @@ export function parseCommand(w: World, line: string): Parsed {
     if ((verb === 'run' || verb === 'create') && !afterImage) {
       afterImage = true;
       // the first positional is the image: label below
-      segFor.push(mk(t, 'image', 'image resolution', `Looks for ${normalizeRef(t.text)} in local storage; if missing, pulls it from the registry first. The image is the read-only template the container is stamped from.`, 'image'));
+      segFor.push(mk(t, 'image', 'image to use', `Looks for ${normalizeRef(t.text)} in local storage; if missing, pulls it from the registry first. The image is the read-only template the container is stamped from.`, 'image'));
     }
   }
 
   // verb segment
   const verbExplain: Record<string, [string, string, string?]> = {
-    run: ['container lifecycle', 'Create AND start a container: dockerd → containerd → shim → runc.', 'lifecycle'],
-    create: ['container lifecycle', 'Create a container without starting it.', 'lifecycle'],
-    start: ['container lifecycle', 'Start an existing stopped container (new process, same writable layer).', 'lifecycle'],
-    stop: ['container lifecycle', 'SIGTERM, wait 10 s, then SIGKILL.', 'signals'],
-    restart: ['container lifecycle', 'Stop then start: a new process in the same container.', 'lifecycle'],
-    pause: ['container lifecycle', 'Freeze its processes with the cgroup freezer.', 'cgroups'],
-    unpause: ['container lifecycle', 'Thaw a paused container.', 'cgroups'],
-    kill: ['container lifecycle', 'Send a signal (default SIGKILL) to PID 1 inside the container.', 'signals'],
-    rm: ['container lifecycle', 'Delete the container and its writable layer. Volumes and the image stay.', 'writable-layer'],
+    run: ['create + start', 'Create AND start a container: dockerd → containerd → shim → runc.', 'lifecycle'],
+    create: ['create container', 'Create a container without starting it.', 'lifecycle'],
+    start: ['start container', 'Start an existing stopped container (new process, same writable layer).', 'lifecycle'],
+    stop: ['stop container', 'SIGTERM, wait 10 s, then SIGKILL.', 'signals'],
+    restart: ['start container', 'Stop then start: a new process in the same container.', 'lifecycle'],
+    pause: ['freeze processes', 'Freeze its processes with the cgroup freezer.', 'cgroups'],
+    unpause: ['freeze processes', 'Thaw a paused container.', 'cgroups'],
+    kill: ['send a signal', 'Send a signal (default SIGKILL) to PID 1 inside the container.', 'signals'],
+    rm: ['remove container', 'Delete the container and its writable layer. Volumes and the image stay.', 'writable-layer'],
     rmi: ['image management', 'Delete a local image (refused while a container uses it).', 'image'],
     pull: ['image acquisition', 'Download an image (only missing layers) from the registry.', 'registry'],
     build: ['image build', 'Run the Dockerfile through BuildKit; unchanged steps come from cache.', 'build-cache'],
@@ -381,7 +381,7 @@ export function parseCommand(w: World, line: string): Parsed {
     case 'pull': {
       const e = need(1, 'docker pull IMAGE[:TAG]');
       if (e) return err(e);
-      posSeg(positional[0]!, 'image', 'image resolution', 'The repository and tag to fetch from the registry.', 'registry');
+      posSeg(positional[0]!, 'image', 'image to use', 'The repository and tag to fetch from the registry.', 'registry');
       p.plan.push({ action: 'pull_image', ref: positional[0]!.text });
       return finish(p);
     }

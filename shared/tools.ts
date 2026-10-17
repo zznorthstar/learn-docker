@@ -1,7 +1,7 @@
 import { ACTION_NAMES, ACTION_SPECS, manualText } from './actions';
 
 /**
- * MCP tool surface. Deliberately coarse: ~14 tools, each with a typed payload.
+ * MCP tool surface. Deliberately coarse: 14 tools, each with a typed payload.
  * Descriptions are written for the AI teacher: they explain how the world works,
  * not just what the function does.
  */
@@ -36,6 +36,8 @@ HOW TO TEACH WELL HERE
 6. Reveal relationships contextually with world_focus (reveal modes: depends_on, depended_by, made_of, used_by, why, to_kernel, to_ecosystem). Never ask to show the whole graph.
 7. Correct the metaphor when going deeper (e.g. "the shipping box was a simplification: here is the process and its namespaces").
 8. You never set positions, colours or animations. You act only through semantic tools; the world engine decides what to render.
+9. Use a scene rhythm: SHOW → one short sentence → learner interaction → visible consequence → next idea. Introduce only one new relationship at a time. Keep captions to one sentence (about 20 words); pause for the learner rather than sending a sequence of tool calls all at once.
+10. Keep a stable visual anchor. Focus the relevant object with world_focus, show one relevant overlay with world_set_overlay, and change one thing. Reuse that object when going deeper. Explain technical vocabulary only when it becomes visible; inspect for facts before narrating. Pull back to the overview with world_set_view after the relationship is understood.
 
 HONESTY ABOUT THE SIMULATION
 This is a deterministic simulation of Docker's behaviour (verified against real semantics for lifecycle, volumes, networking, ports, cgroup limits and OOM, signals/PID 1, restart policies, build cache, Compose health cascades), not a real Docker daemon. Say so if asked. Some details are simplified: one sample Dockerfile (a Node API), a Compose project named "shop", a fixed catalogue of images (nginx, redis:7, postgres:16, alpine:3.20, busybox, hello-world, node:20-alpine, python:3.12-slim, leaky:latest, arm-demo:latest), time only passes when you advance it.

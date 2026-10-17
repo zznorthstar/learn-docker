@@ -26,8 +26,8 @@ Open the site, finish (or skip) the intro, press **Connect your AI**, and either
 ```bash
 npm run build                # typecheck + production bundle in dist/
 npm test                     # 113 unit tests (engine, projection, identity, hardening)
-npm run test:relay           # 9 tests: real workerd, MCP (incl. the official MCP SDK client) + browser socket
-npm run test:e2e             # 37 tests: real Chrome + Rive + Worker (builds first)
+npm run test:relay           # 10 tests: real workerd, MCP (incl. the official MCP SDK client) + browser socket
+npm run test:e2e             # 45 tests: real Chrome + Rive + Worker (builds first)
 npm run test:all
 npm run build:rive           # regenerate public/rive/docker-world.riv from rive/gen/*.mjs (needs the `rive` CLI)
 node tests/e2e/perf.mjs      # sizes, load timeline, CPU, fps, pause-when-hidden
@@ -47,7 +47,7 @@ Claude Code: `claude mcp add --transport http docker-world https://<site>/mcp --
 
 **Connection test.** `world_connection_test` (or the self-test button) makes Santa visibly wave and shows "Your AI is connected". A green dot alone proves nothing, so the test makes the world react. If the tab is closed, tools return `world_offline` with instructions; reopening the same browser reconnects automatically.
 
-### MCP tool surface (14 tools, semantic only)
+### MCP tool surface (14 tools)
 
 | Tool | Purpose |
 |---|---|
@@ -108,7 +108,7 @@ Add a custom route/domain in the dashboard or `wrangler.jsonc`. `public/_headers
 
 ## Verified
 
-Unit (113), relay (9), end-to-end (37, real Chrome + real workerd), axe audit, performance measurements and a `wrangler deploy --dry-run`.
+Unit (113), relay (10), end-to-end (45, real Chrome + real workerd), axe audit, performance measurements and a `wrangler deploy --dry-run`.
 
 ## Limitations worth knowing
 
@@ -116,3 +116,15 @@ Unit (113), relay (9), end-to-end (37, real Chrome + real workerd), axe audit, p
 - Six deck slots; extra containers show as an overflow chip (still fully inspectable).
 - The relay has no rate limiting. Lab ids are 50 bits and secrets 256 bits, so guessing is not a concern, but anyone can open sockets for random labs; add Cloudflare rate limiting before a large public launch.
 - Rive was verified in headless Chrome with software GL (60 fps, ~68% main-thread busy; pauses to 0% when hidden). On real GPUs the cost is lower; the app lowers detail automatically if frames fall behind. No real-phone test was possible.
+
+## Side-by-side learning
+
+There is no in-app chat, sign-in, model provider, or conversation queue. The
+learner chats in their external AI client and keeps Whale Lab open beside it,
+using split view or two restored browser windows. The onboarding demonstrates
+this with a short CSS illustration; it never mutates the semantic world or Rive.
+Reduced motion shows the final illustration without animation.
+
+The generic **Ai-Agent (meta muse, grok bot...)** setup copies the endpoint, lab
+key, initialization sequence and teaching instructions together. Dedicated
+Claude Code, JSON and Desktop setup options remain available.

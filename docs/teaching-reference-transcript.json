@@ -1,0 +1,52 @@
+[
+  {
+    "start": 0.0,
+    "end": 4.64,
+    "text": " If you make a prediction, you can compare it to the answer to get an error."
+  },
+  {
+    "start": 4.64,
+    "end": 10.08,
+    "text": " If you turn that error into a number for how bad the prediction was, you get a loss."
+  },
+  {
+    "start": 10.08,
+    "end": 14.6,
+    "text": " If you ask which direction would make that loss smaller, you get a gradient."
+  },
+  {
+    "start": 14.6,
+    "end": 18.56,
+    "text": " If you take a small step downhill, you get a gradient descent step."
+  },
+  {
+    "start": 18.56,
+    "end": 21.84,
+    "text": " If you repeat that step over and over, you get training."
+  },
+  {
+    "start": 21.84,
+    "end": 25.64,
+    "text": " If you do that across millions of examples, you get a trained model."
+  },
+  {
+    "start": 25.64,
+    "end": 30.880000000000003,
+    "text": " If that model learns patterns from data and uses them to make predictions, you get machine learning."
+  },
+  {
+    "start": 30.880000000000003,
+    "end": 36.56,
+    "text": " If you scale that up with huge data sets, huge models, and huge amounts of compute, you get modern AI."
+  },
+  {
+    "start": 36.56,
+    "end": 39.68,
+    "text": " And if you rewind all of it, you get one prediction."
+  },
+  {
+    "start": 39.68,
+    "end": 40.18,
+    "text": " And..."
+  }
+]

@@ -115,6 +115,23 @@ describe('relay + MCP end to end', () => {
     expect(t).toMatch(/Streamable HTTP/);
   });
 
+  it('API paths bypass SPA navigation fallback for every auth shape', async () => {
+    for (const key of [null, 'invalid', `${newLabId()}.${newSecret()}`]) {
+      const response = await fetch(`${HTTP}/mcp`, {
+        method: 'POST',
+        headers: { 'Sec-Fetch-Mode': 'navigate', accept: 'text/html', 'content-type': 'application/json', ...(key ? { authorization: `Bearer ${key}` } : {}) },
+        body: JSON.stringify({ jsonrpc: '2.0', id: 1, method: 'ping' }),
+      });
+      expect(response.status).toBe(401);
+      expect(response.headers.get('content-type')).toMatch(/application\/json/);
+    }
+    const options = await fetch(`${HTTP}/mcp`, { method: 'OPTIONS', headers: { 'Sec-Fetch-Mode': 'navigate' } });
+    expect(options.status).toBe(204);
+    expect(options.headers.get('access-control-allow-methods')).toContain('POST');
+    const health = await fetch(`${HTTP}/health`, { headers: { 'Sec-Fetch-Mode': 'navigate' } });
+    expect(await health.json()).toEqual({ ok: true, service: 'docker-world' });
+  });
+
   it('browser connects; a lab id alone, or a wrong secret, grants nothing', async () => {
     const b = browser(labId, secret);
     b.client.start();

@@ -9,7 +9,7 @@
 [**Live demo →**](https://learndocker.hamdibouzidi.com) &nbsp;·&nbsp; [Architecture](docs/ARCHITECTURE.md) &nbsp;·&nbsp; [Contributing](CONTRIBUTING.md)
 
 [![License: MIT](https://img.shields.io/badge/license-MIT-ffb454.svg)](LICENSE)
-![Tests](https://img.shields.io/badge/tests-113%20unit%20%C2%B7%209%20relay%20%C2%B7%2037%20e2e-3fb950)
+![Tests](https://img.shields.io/badge/tests-113%20unit%20%C2%B7%2010%20relay%20%C2%B7%2045%20e2e-3fb950)
 ![MCP](https://img.shields.io/badge/MCP-Streamable%20HTTP-5a7fe0)
 ![Runs on](https://img.shields.io/badge/runs%20on-Cloudflare%20Workers-f38020)
 
@@ -41,7 +41,7 @@ The twist: **there is no built-in tutor.** You connect your own AI (Claude Code,
 ## Try it in 60 seconds
 
 1. Open **https://learndocker.hamdibouzidi.com**
-2. Press **Connect your AI**, then **Run the self-test** (Santa waves, proving the pipe works end to end).
+2. Press **Connect your AI**, then **Test connection** (Santa waves, proving the pipe works end to end).
 3. Add the endpoint to your AI client. For Claude Code:
 
    ```bash
@@ -80,6 +80,12 @@ Details: [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) · Rive internals: [rive/R
 
 Tool descriptions double as the teacher's manual; the server also sends it in the MCP `initialize` instructions.
 
+For now, the best setup is two tabs side by side: your AI in one, Whale Lab in
+the other. Leave full screen and use your browser’s split view, or move one tab
+into a second window. Chat with your AI while it changes the world here.
+The **Ai-Agent (meta muse, grok bot...)** option copies a complete setup prompt,
+including your endpoint and private lab key.
+
 ## Run it locally
 
 ```bash
@@ -95,11 +101,23 @@ npm run test:e2e      # real Chrome, Rive, Worker (builds first)
 npm run build         # typecheck + production bundle in dist/
 ```
 
+To test the actual deployment (including edge routing, auth, browser relay,
+the in-app self-test and Santa's wave):
+
+```bash
+MCP_SMOKE_URL=https://learndocker.hamdibouzidi.com node tests/e2e/mcp-smoke.mjs
+```
+
+The [teaching reference study](docs/TEACHING-STUDY.md) documents the local Whisper
+transcription, frame analysis, and how the learning interface applies them.
+
 Requires Node 22+. Rebuilding the Rive art (`npm run build:rive`) also needs the [`rive` CLI](https://rive.app); the compiled `.riv` is committed so you don't need it to run the app.
 
 ## Deploy your own
 
 One Worker serves the site, `/mcp` and `/ws`, with one SQLite-backed Durable Object per lab.
+Keep `assets.run_worker_first` for `/mcp`, `/ws`, and `/health`: SPA navigation
+fallback must not intercept these API routes.
 
 ```bash
 npm run build && npx wrangler login && npx wrangler deploy
@@ -110,7 +128,7 @@ Add your domain under `routes` in `wrangler.jsonc`. Cloudflare Workers Builds al
 
 - The lab id is public routing; the **secret** is a 256-bit capability token sent only in the `Authorization` header (and in the browser socket's first message), never in a URL.
 - The relay stores `sha256(secret)` only. The first browser to present a pair claims the lab.
-- Strict CSP (`wasm-unsafe-eval` only for the Rive runtime), `nosniff`, no-referrer. axe-core WCAG 2 A/AA is clean on five views.
+- Strict CSP (`wasm-unsafe-eval` only for the Rive runtime), `nosniff`, no-referrer. axe-core WCAG 2 A/AA is clean on six views.
 
 Report vulnerabilities per [SECURITY.md](SECURITY.md).
 

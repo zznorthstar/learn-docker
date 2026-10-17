@@ -8,6 +8,24 @@ export function snippet(app: App, kind: string): string {
   const url = app.mcpUrl;
   const key = app.bearerKey;
   switch (kind) {
+    case 'ai-agent':
+      return `Connect to my Whale Lab and teach me Docker through the visual world open in my browser.
+
+Server name: docker-world
+Transport: MCP Streamable HTTP (POST JSON-RPC)
+Endpoint: ${url}
+Authorization header: Bearer ${key}
+
+Use these credentials only for this lab. Keep the key in the Authorization header, never in a URL.
+
+If you can configure an MCP connection, add this server with the endpoint and header above. Otherwise, use your HTTP tool to POST JSON-RPC directly to the endpoint, with Content-Type: application/json and Accept: application/json, text/event-stream.
+
+First initialize:
+{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":"2025-06-18","capabilities":{},"clientInfo":{"name":"${kind}","version":"1"}}}
+Then send {"jsonrpc":"2.0","method":"notifications/initialized"} and list the tools with {"jsonrpc":"2.0","id":2,"method":"tools/list"}.
+Call {"jsonrpc":"2.0","id":3,"method":"tools/call","params":{"name":"world_connection_test","arguments":{}}}. Santa should wave. Keep my browser tab open.
+
+Inspect the world before teaching. Show one change, explain it in one short sentence, let me try, then show the consequence. Start with my question or selected object. Use the existing prediction and rewind tools to help me learn.`;
     case 'endpoint':
       return url;
     case 'key':
@@ -23,7 +41,7 @@ export function snippet(app: App, kind: string): string {
 
 1. Call world_connection_test first (Santa should wave on my screen).
 2. Call world_inspect to see what I can already see, and world_inspect with scope "user_activity" to see what I have been clicking.
-3. I learn from patterns and relationships, not lectures. Teach by changing the world: one visible change, one sentence of insight. Break things on purpose, trace causes (world_inspect scope "causal_trace"), rewind, and ask me to predict before you reveal (lesson_check_understanding).
+3. Teach one idea at a time: show → one short sentence → let me try → show the consequence. Wait for my response before the next idea. Teach by changing the world: one visible change, one sentence of insight. Break things on purpose, trace causes (world_inspect scope "causal_trace"), rewind, and ask me to predict before you reveal (lesson_check_understanding).
 4. Start from my question or from what I have selected. Take me deeper through the abstraction levels (world_set_view level 0-6) so the cartoon never becomes a false model.`;
     default:
       return '';
@@ -52,7 +70,7 @@ export function renderModal(app: App): string {
       inner = about();
       break;
   }
-  return `<div class="scrim" data-act="close-modal-scrim"><div class="modal ${wide ? 'wide' : ''}" role="dialog" aria-modal="true" aria-label="${m.kind}" data-act="noop">${m.kind !== 'onboarding' ? `<button class="btn ghost small x" data-act="close-modal" aria-label="Close">${icon('x')}</button>` : ''}${inner}</div></div>`;
+  return `<div class="scrim" data-act="close-modal-scrim"><div class="modal ${wide ? 'wide' : ''} ${m.kind === 'onboarding' ? 'onboarding' : ''}" role="dialog" aria-modal="true" aria-label="${m.kind}" data-act="noop">${m.kind !== 'onboarding' ? `<button class="btn ghost small x" data-act="close-modal" aria-label="Close">${icon('x')}</button>` : ''}${inner}</div></div>`;
 }
 
 /* ============================================================== onboarding */
@@ -63,28 +81,43 @@ function onboarding(app: App, step: number): string {
     `<div class="nav">${step > 0 ? '<button class="btn ghost" data-act="onb-back">Back</button>' : ''}<span class="grow"></span><button class="btn ghost" data-act="onb-skip">Skip</button><button class="btn primary" data-act="onb-next">${last ? 'Start exploring' : 'Next'}</button></div>`;
   switch (step) {
     case 0:
-      return `<p class="lead" style="margin:0 0 4px">Hey,</p><h1>I'm Hamdi.</h1>
-        <p>I'm learning Docker too, and the normal tutorials never fit how my head works. I can't absorb “this is a container, this is a network, this is a volume” one box at a time. I need to <i>see</i> how the pieces lean on each other before any of it clicks.</p>
-        <p>So I built this.</p>${dots}${nav()}`;
+      return `<p class="eyebrow">A note from the maker</p><h1>Hey, I'm Hamdi.</h1>
+        <p>I'm learning Docker too, and normal lessons never fit how my head works. I need to see how things connect before I really understand them, so I built this.</p>${dots}${nav()}`;
     case 1:
-      return `<h1>Docker, as a living system.</h1>
-        <p>That whale is your machine. Santa flies it (he's <b>dockerd</b>). His reindeer crew do the real work. Containers ride on the deck, images wait in the harbor, volumes are strapped cargo, and the coloured lines are networks.</p>
-        <p>It's a cartoon on purpose, and it can't be allowed to stay a lie. Go deeper and the cartoon peels away: past Docker's objects, through the engine, down to plain Linux processes and the kernel, and out to Kubernetes. <b>Click the container behind this window, then press “deeper”.</b></p>${dots}${nav()}`;
+      return `<p class="eyebrow">See it. Try it.</p><h1>Docker, as a living system.</h1>
+        <p>The whale is your machine. Containers ride on its back.</p>
+        <p>Click an object. Try a change. Watch what happens.</p>${dots}${nav()}`;
     case 2:
-      return `<h1>The unusual part.</h1>
-        <p>You don't have to read any of it. <b>Bring your own AI.</b> Connect it and it can drive this world while it teaches you: reveal internals, break things on purpose, rewind, trace what caused what, and react to whatever you click.</p>
-        <p class="lead">You explore. Your AI teaches. The world becomes the diagram.</p>
-        <div class="promise">No account. No hosted AI. Your agent stays your agent; this page simply gives it a world to teach through.</div>${dots}${nav()}`;
+      return `<p class="eyebrow">Bring your own teacher</p><h1>Better side by side.</h1>
+        <p>For now, the best setup is two tabs next to each other: your AI in one, Whale Lab in the other.</p>
+        <p>Leave full screen. Use your browser’s split view, or drag one tab into a second window.</p>
+        ${sideBySideDemo()}
+        <p class="setup-hint">Chat with your AI. Watch it change the world.</p>${dots}${nav()}`;
     default:
-      return `<h1>Connect your AI.</h1><p>Add this server to any MCP-capable AI (Claude, Cursor, VS Code, anything that speaks MCP). It takes a minute, and you can skip it and explore on your own.</p>${connectBody(app, true)}${dots}<div class="nav"><button class="btn ghost" data-act="onb-back">Back</button><span class="grow"></span><button class="btn primary" data-act="onb-next">Start exploring</button></div>`;
+      return `<p class="eyebrow">One quick connection</p><h1>Connect your AI.</h1><p>Choose your agent and give it the setup prompt. It can connect and make Santa wave.</p>${connectBody(app, true)}${dots}<div class="nav"><button class="btn ghost" data-act="onb-back">Back</button><span class="grow"></span><button class="btn primary" data-act="onb-next">Start exploring</button></div>`;
   }
+
+}
+
+/** A short, self-contained illustration; real world/Rive state stays untouched. */
+function sideBySideDemo(): string {
+  return `<div class="side-by-side-demo" role="img" aria-label="Whale Lab leaves full screen. An AI tab opens beside it. You ask the AI to start a container, and one appears on the whale.">
+    <div class="demo-browser demo-world">
+      <div class="demo-browser-bar"><span class="demo-traffic" aria-hidden="true">•••</span><span>Whale Lab</span><svg class="demo-restore" viewBox="0 0 16 16" aria-hidden="true"><path d="M6 3h7v7M3 6h7v7H3z"/></svg></div>
+      <div class="demo-world-content"><svg viewBox="0 0 220 120" aria-hidden="true"><path d="M29 74 12 52 41 62C63 36 144 31 181 51c22 12 30 31 9 43-22 14-75 17-110 5C52 90 39 86 29 74Z" fill="#345b9c"/><path d="M91 99c-6 11-19 12-26 7l-3-12" fill="#2a487b"/><circle cx="176" cy="64" r="4" fill="#eef2fa"/><circle cx="177" cy="64" r="2" fill="#101725"/><path d="M49 47h119" stroke="#607492" stroke-width="3"/><rect x="72" y="28" width="27" height="18" rx="2" fill="#7698c9"/><g class="demo-new-container"><rect x="105" y="28" width="28" height="18" rx="2" fill="#ffb454"/><path d="M112 31v12m6-12v12m6-12v12" stroke="#a96c27"/></g></svg><span class="demo-world-status">Container running <i aria-hidden="true"></i></span></div>
+    </div>
+    <div class="demo-browser demo-ai">
+      <div class="demo-browser-bar"><span class="demo-traffic" aria-hidden="true">•••</span><span>Your AI</span></div>
+      <div class="demo-conversation"><div class="demo-question">Start a container.</div><div class="demo-answer">Watch the whale.</div><div class="demo-tool">↗ Container started</div></div>
+    </div>
+  </div>`;
 }
 
 /* =================================================================== connect */
 
 function connect(app: App): string {
   return `<h2>Connect your AI</h2>
-    <div class="promise">No account. No hosted AI. Your agent stays your agent. This page simply gives it a world to teach through.</div>
+    <div class="promise">Let your AI teach by changing the world on your screen.</div>
     ${connectBody(app, false)}
     <div class="nav"><button class="btn ghost small" data-act="new-lab" title="Creates a new lab id and key">Reset lab key…</button><span class="grow"></span><button class="btn" data-act="close-modal">Done</button></div>`;
 }
@@ -96,49 +129,54 @@ function connectBody(app: App, compact: boolean): string {
   const relayRow = (() => {
     const s = ui.relay;
     const ok = s === 'online';
-    const text = s === 'online' ? 'This tab is registered with the relay' : s === 'connecting' ? 'Connecting to the relay…' : s === 'replaced' ? 'This lab is open in another tab' : s === 'rejected' ? 'The relay rejected this lab key' : 'Not connected (will retry)';
+    const text = s === 'online' ? 'Ready for your AI' : s === 'connecting' ? 'Connecting your world…' : s === 'replaced' ? 'This lab is open in another tab' : s === 'rejected' ? 'The relay rejected this lab key' : 'Not connected (will retry)';
     return `<div class="row"><span class="dot ${ok ? 'ok' : s === 'connecting' ? 'warn pulse' : 'bad'}"></span><b>Your world</b><span>${text}</span></div>`;
   })();
-  const aiRow = `<div class="row"><span class="dot ${link.agent ? 'ok' : 'warn'}"></span><b>Your AI</b><span>${link.agent ? `connected${link.lastMcpClient ? ` as “${esc(link.lastMcpClient)}”` : ''}${link.lastMcpAt ? ` · last heard ${ago(link.lastMcpAt)}` : ''}` : 'not seen yet: add the server below, then run the test'}</span></div>`;
+  const aiRow = `<div class="row"><span class="dot ${link.agent ? 'ok' : 'warn'}"></span><b>Your AI</b><span>${link.agent ? `connected${link.lastMcpClient ? ` as “${esc(link.lastMcpClient)}”` : ''}${link.lastMcpAt ? ` · last heard ${ago(link.lastMcpAt)}` : ''}` : 'Waiting for a connection'}</span></div>`;
   const key = ui.keyVisible ? app.bearerKey : mask(app.bearerKey);
   const tabs: [UiState['connectTab'], string][] = [
+    ['ai-agent', 'Ai-Agent (meta muse, grok bot...)'],
     ['claude-code', 'Claude Code'],
     ['json', 'Cursor / VS Code / JSON'],
-    ['desktop', 'Claude Desktop (stdio)'],
-    ['prompt', 'Prompt to paste'],
+    ['desktop', 'Claude Desktop'],
+    ['prompt', 'Teaching prompt'],
   ];
-  const code = (kind: string, show: string): string => `<div class="codebox"><button class="btn small copy" data-act="copy" data-arg="${kind}" aria-label="Copy this snippet">${icon('copy', 13)} Copy</button>${esc(show)}</div>`;
+  const code = (kind: string, show: string, label = 'Copy'): string => `<div class="codebox"><button class="btn small copy" data-act="copy" data-arg="${kind}" aria-label="${esc(label === 'Copy' ? 'Copy this snippet' : label)}">${icon('copy', 13)} ${esc(label)}</button>${esc(show)}</div>`;
   const shown = (kind: string): string => {
     const real = snippet(app, kind);
     return ui.keyVisible ? real : real.split(app.bearerKey).join(mask(app.bearerKey));
   };
   const tab = ui.connectTab;
+  const agentPrompt = tab === 'ai-agent';
   const snippetBox =
-    tab === 'claude-code'
+    agentPrompt
+      ? `<p class="setup-hint">Paste this into a private chat with your agent. Copy includes the endpoint, full lab key, and connection steps.</p>${code(tab, shown(tab).split('\n').filter(line => /^(Endpoint:|Authorization header:)/.test(line)).join('\n'), 'Copy setup + key')}`
+      : tab === 'claude-code'
       ? `<p style="font-size:14px;margin:4px 0">Run this once in a terminal:</p>${code('cc', shown('cc'))}`
       : tab === 'json'
-        ? `<p style="font-size:14px;margin:4px 0">Add to your client's MCP config (Streamable HTTP, header auth):</p>${code('json', shown('json'))}`
+        ? `<p class="setup-hint">Paste into your AI’s MCP server settings:</p>${code('json', shown('json'))}`
         : tab === 'desktop'
-          ? `<p style="font-size:14px;margin:4px 0">For clients that only speak stdio, bridge with <code>mcp-remote</code>:</p>${code('desktop', shown('desktop'))}`
+          ? `<p class="setup-hint">Add this to Claude Desktop’s configuration:</p>${code('desktop', shown('desktop'))}`
           : `<p style="font-size:14px;margin:4px 0">Once connected, paste this to your AI so it knows how to teach here:</p>${code('prompt', snippet(app, 'prompt'))}`;
   const test = `<div class="status" aria-live="polite">${relayRow}${aiRow}</div>
-    <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap"><button class="btn" data-act="selftest" ${ui.selfTest.state === 'running' ? 'disabled' : ''}>${icon('plug', 14)} Run the self-test</button>
-    <span style="font-size:13px;color:${ui.selfTest.state === 'ok' ? 'var(--ok)' : ui.selfTest.state === 'fail' ? 'var(--failure)' : 'var(--muted)'}">${esc(ui.selfTest.msg || 'Sends a real request through the relay to this page. Santa should wave.')}</span></div>
-    <p style="font-size:13px;color:var(--muted);margin:8px 0 0">Or ask your AI: <b>“call world_connection_test”</b>. When it works, Santa waves and this page says <b>Your AI is connected</b>. (A green dot alone proves nothing, so the test makes the world react.)</p>`;
-  return `${compact ? '' : ''}
-    <div class="keyrow"><span style="min-width:74px;color:var(--muted)">Endpoint</span><code>${esc(app.mcpUrl)}</code><button class="btn small" data-act="copy" data-arg="endpoint" aria-label="Copy the endpoint URL">${icon('copy', 13)}</button></div>
-    <div class="keyrow"><span style="min-width:74px;color:var(--muted)">Lab key</span><code id="labkey" aria-label="Lab key (secret)">${esc(key)}</code><button class="btn small" data-act="key-toggle" aria-pressed="${ui.keyVisible}" title="${ui.keyVisible ? 'Hide' : 'Show'} the key">${icon(ui.keyVisible ? 'eyeoff' : 'eye', 14)}</button><button class="btn small" data-act="copy" data-arg="key" aria-label="Copy the lab key">${icon('copy', 13)}</button></div>
-    <p style="font-size:12.5px;color:var(--muted);margin:2px 0 8px">${icon('lock', 12)} The key is a capability token, not an identity: sent only in the <code>Authorization</code> header, never in a URL. Lab id <code>${esc(app.identity.labId)}</code> alone grants nothing. Anyone holding the key can steer this lab, so keep it out of screenshots.</p>
-    <div class="tabs inline" role="tablist">${tabs.map(([k, l]) => `<button role="tab" aria-selected="${tab === k}" data-act="connect-tab" data-arg="${k}">${l}</button>`).join('')}</div>
+    <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap"><button class="btn" data-act="selftest" ${ui.selfTest.state === 'running' ? 'disabled' : ''}>${icon('plug', 14)} Test connection</button>
+    <span style="font-size:13px;color:${ui.selfTest.state === 'ok' ? 'var(--ok)' : ui.selfTest.state === 'fail' ? 'var(--failure)' : 'var(--muted)'}">${esc(ui.selfTest.msg || 'Santa waves when the test reaches this world.')}</span></div>
+    <p class="setup-hint">Then ask your AI: <b>“Call world_connection_test.”</b></p>`;
+  const credentials = `<div class="keyrow"><span>Endpoint</span><code>${esc(app.mcpUrl)}</code><button class="btn small" data-act="copy" data-arg="endpoint" aria-label="Copy the endpoint URL">${icon('copy', 13)}</button></div>
+    <div class="keyrow"><span>Lab key</span><code id="labkey" aria-label="Lab key (secret)">${esc(key)}</code><button class="btn small" data-act="key-toggle" aria-pressed="${ui.keyVisible}" title="${ui.keyVisible ? 'Hide' : 'Show'} the key">${icon(ui.keyVisible ? 'eyeoff' : 'eye', 14)}</button><button class="btn small" data-act="copy" data-arg="key" aria-label="Copy the lab key">${icon('copy', 13)}</button></div>
+    <p class="setup-hint">Keep your key private. Anyone with it can control this lab. It travels in the Authorization header, never in a URL.</p>`;
+  return `<label class="client-select">Your AI<select data-live="connect-client" aria-label="Your AI">${tabs.map(([k, l]) => `<option value="${k}" ${tab === k ? 'selected' : ''}>${l}</option>`).join('')}</select></label>
     ${snippetBox}
-    <h2 style="font-size:19px;margin:14px 0 6px">Test it</h2>${test}`;
+    <details class="connection-key ${tab === 'prompt' ? 'needs-key' : ''}" data-disclosure="connection-key"><summary>Endpoint & private lab key<small>${tab === 'prompt' ? 'Click to get these' : 'Show details'}</small></summary><div class="credentials">${credentials}</div></details>
+    ${test}`;
+
 }
 
 /* ================================================================ scenarios */
 
 function scenarios(app: App): string {
   const done = new Set(app.engine.progress.scenarios);
-  return `<h2>What if I…?</h2><p style="font-size:14.5px">Deliberately break Docker, then see exactly why it broke. <b>Predict first</b> is the best way to learn: commit to an answer, then watch the world prove you right or wrong. Every experiment can be rewound.</p>
+  return `<h2>What if I…?</h2><p style="font-size:14.5px">Pick an experiment. Make a prediction. Watch the result. You can always rewind.</p>
     <div class="scen-grid">${SCENARIOS.map(
       (s) => `<div class="scen ${done.has(s.id) ? 'done' : ''}"><h3>${esc(s.title)}${done.has(s.id) ? ' <span class="pill ok">done</span>' : ''}</h3><p>${esc(s.whatIf)}</p><div class="chips">${s.concepts.slice(0, 3).map((c) => `<span class="chip" style="font-size:11px">${esc(CONCEPTS[c]?.name ?? c)}</span>`).join('')}</div><div class="row"><button class="btn small primary" data-act="scenario-predict" data-arg="${s.id}">Predict, then run</button><button class="btn small" data-act="scenario-run" data-arg="${s.id}">Just run it</button></div></div>`,
     ).join('')}</div>`;

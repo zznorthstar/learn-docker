@@ -5,6 +5,7 @@ import type { Parsed } from '../engine/terminal';
 import type { Action, World, WorldEvent } from '../engine/types';
 import { diskFreeMB } from '../engine/world';
 import { friendly } from './shell';
+import { normalizeRef } from '../engine/util';
 
 export function renderDockTabs(app: App): string {
   const e = app.engine;
@@ -14,7 +15,7 @@ export function renderDockTabs(app: App): string {
     ['terminal', 'Terminal', ''],
     ['lab', 'Lab', e.view.labMode ? '<span class="count" style="background:var(--lantern);color:#1b1205">on</span>' : ''],
   ];
-  return `<div class="tablist" role="tablist" aria-label="Dock">${tabs.map(([k, l, extra]) => `<button role="tab" aria-selected="${app.ui.dock === k}" data-act="dock" data-arg="${k}">${l}${extra}</button>`).join('')}</div><span class="spacer"></span>
+  return `<div class="tablist" role="tablist" aria-label="Dock">${tabs.map(([k, l, extra]) => `<button role="tab" aria-selected="${app.ui.dock === k}" data-act="dock" data-arg="${k}">${k === 'events' ? '<span class="tab-full">Events & causes</span><span class="tab-short">Events</span>' : l}${extra}</button>`).join('')}</div><span class="spacer"></span>
     <button class="btn small ghost" data-act="preset" data-arg="welcome" title="Reset to the first-cargo world">Reset</button>
     <button class="btn small ghost" data-act="dock-toggle" aria-expanded="${app.ui.dockOpen}" title="${app.ui.dockOpen ? 'Collapse' : 'Expand'} this panel">${app.ui.dockOpen ? '▾ Hide' : '▴ Show'}</button>`;
 }
@@ -80,7 +81,7 @@ function childrenOf(events: WorldEvent[], id: number): string {
 /* ================================================================ terminal */
 
 export function renderTerminalOut(app: App): string {
-  if (!app.term.out.length) return `<div class="dim" style="color:var(--faint)">Type a Docker command. It is parsed into its meaning (shown under the prompt), then run against the simulated world. Nothing touches a real Docker daemon.\nTry <span class="cmd">docker run -d --name web -p 8080:80 nginx</span> or <span class="cmd">help</span>.</div>`;
+  if (!app.term.out.length) return `<div class="term-welcome"><b>A command. A change in the world.</b><span>Try <button data-act="term-suggest" data-arg="docker ps" class="terminal-example">docker ps</button> to see what’s running.</span><span class="dim">↑ ↓ history · Enter to run · help for commands</span></div>`;
   return app.term.out.map((x) => (x.cmd !== undefined ? `<div class="cmd">$ ${esc(x.cmd)}</div>` : `<div class="${x.cls ?? ''}">${esc(x.out ?? '')}</div>`)).join('');
 }
 
@@ -89,13 +90,17 @@ const SUGGEST = ['docker run -d --name web -p 8080:80 nginx', 'docker run -d --n
 export function renderTermInput(app: App, forced?: Parsed): string {
   const p = forced ?? app.term.parsed;
   if (!p) {
-    return `<div class="suggest" aria-label="Suggestions">${SUGGEST.slice(0, 5)
+    return `<div class="suggest" aria-label="Suggestions">${[SUGGEST[2]!, 'docker run -d --name cache redis:7', SUGGEST[6]!, 'help']
       .map((s) => `<button data-act="term-suggest" data-arg="${esc(s)}">${esc(s.length > 52 ? s.slice(0, 50) + '…' : s)}</button>`)
       .join('')}</div>`;
   }
   if (p.error) return `<span class="err" style="color:var(--failure);font-family:var(--font-ui)">${esc(p.error)}</span>`;
   if (!p.segs.length) return '';
-  return p.segs.map((s) => `<span class="seg ${s.role}" tabindex="0" data-tip="${esc(s.explain)}" aria-label="${esc(s.text)}: ${esc(s.label)}. ${esc(s.explain)}"><b>${esc(s.text)}</b><i>${esc(s.label)}</i></span>`).join('');
+  return p.segs.map((s) => {
+    const ref = normalizeRef(s.text);
+    const target = s.role === 'image' && app.engine.world.images[ref] ? `image:${ref}` : app.engine.world.containers[s.text] ? `container:${s.text}` : null;
+    return `<span class="seg ${s.role}" tabindex="0" ${target ? `data-hover="${esc(target)}"` : ''} data-tip="${esc(s.explain)}" aria-label="${esc(s.text)}: ${esc(s.label)}. ${esc(s.explain)}"><b>${esc(s.text)}</b><i>${esc(s.label)}</i></span>`;
+  }).join('');
 }
 
 /* ===================================================================== lab */
@@ -134,7 +139,7 @@ export function renderLab(app: App): string {
   const free = Math.max(0, Math.min(h.diskMB, Math.round(diskFreeMB(w) / 500) * 500));
   const sel = app.engine.view.selected?.startsWith('container:') ? w.containers[app.engine.view.selected.slice(10)] : undefined;
   const last = app.engine.events.filter((x) => x.step === app.engine.cursor && x.source !== 'ai').slice(-4);
-  return `<p style="margin:0 0 10px;color:var(--muted);font-size:13px">These dials are the same semantic controls your AI has. Change one and watch the consequences ripple (below the stage and in <b>Events</b>). Your AI sees every change you make.</p>
+  return `<p style="margin:0 0 10px;color:var(--muted);font-size:13px">Change one thing. Watch what happens.</p>
   <div class="lab-grid">
     ${dial(app, { key: 'latency', title: 'Network fog (latency)', cls: 'network', min: 0, max: 1000, step: 10, value: h.net.latencyMs, hint: hintLatency(h.net.latencyMs) })}
     ${dial(app, { key: 'loss', title: 'Network rain (packet loss)', cls: 'network', min: 0, max: 100, step: 5, value: h.net.packetLossPct, hint: hintLoss(h.net.packetLossPct) })}

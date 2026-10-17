@@ -283,6 +283,22 @@ export function overlaySvg(c: OverlayCtx): string {
   }
 
   /* ---------------- highlight rings (selected / hover / revealed) ---------------- */
+  if (view.selected && !c.showRequest) {
+    const focus = [view.selected];
+    if (view.reveal) {
+      const r = relations(w, view.selected);
+      const mode = view.reveal.mode;
+      const neighbors = mode === 'depends_on' ? r.dependsOn : mode === 'made_of' ? r.madeOf : mode === 'used_by' ? r.usedBy : mode === 'depended_by' ? r.dependedBy : [];
+      focus.push(...neighbors.map(n => n.target));
+    }
+    const holes = focus.flatMap(target => {
+      const p = anchorOf(w, scene, target, c.slotOf);
+      if (!p) return [];
+      if (target === 'host') return [`<ellipse cx="${p.x}" cy="${p.y}" rx="540" ry="180" fill="black"/>`];
+      return [`<rect x="${p.x - 90}" y="${p.y - 110}" width="180" height="180" rx="28" fill="black"/>`];
+    }).join('');
+    if (holes) parts.push(`<defs><mask id="world-focus"><rect x="-5000" y="-5000" width="10000" height="10000" fill="white"/>${holes}</mask></defs><rect class="focus-shade" x="-5000" y="-5000" width="10000" height="10000" fill="#050916" opacity=".38" mask="url(#world-focus)"/>`);
+  }
   const ring = (t: Target | null, cls: string): void => {
     if (!t) return;
     const p = anchorOf(w, scene, t, c.slotOf);

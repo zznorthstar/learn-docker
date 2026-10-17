@@ -18,7 +18,7 @@ export function renderSide(app: App): string {
     ['progress', 'Progress'],
   ];
   const t = app.ui.side;
-  const head = `<div class="tabs"><div class="tablist" role="tablist" aria-label="Inspector">${tabs.map(([k, l]) => `<button role="tab" aria-selected="${t === k}" data-act="side" data-arg="${k}">${l}</button>`).join('')}</div></div>`;
+  const head = `<div class="tabs"><div class="tablist" role="tablist" aria-label="Inspector">${tabs.map(([k, l]) => `<button role="tab" aria-selected="${t === k}" data-act="side" data-arg="${k}">${l}</button>`).join('')}</div><span class="spacer"></span><button class="btn small ghost" data-act="inspector-toggle" aria-label="Close inspector">×</button></div>`;
   const body = t === 'object' ? renderObject(app) : t === 'concept' ? renderConcept(app) : renderProgress(app);
   return `${head}<div class="panel">${app.engine.view.compare ? renderCompare(app) : ''}${body}</div>`;
 }
@@ -39,24 +39,28 @@ function renderObject(app: App): string {
   return `<div class="insp">
     <h2>${esc(ins.title)}</h2>
     <div class="sub">${esc(ins.subtitle)} &nbsp; <span class="pill ${tone(ins.status.tone)}">${esc(ins.status.label)}</span></div>
-    ${lvl <= 1 ? `<p class="story">${esc(ins.story)}</p>` : ''}
-    ${lvl >= 1 && ins.correction ? `<div class="truth"><b>What the metaphor hid.</b> ${esc(ins.correction)}</div>` : ''}
-    <div class="acts" role="group" aria-label="Ask about this object">
+    ${lvl <= 1 ? `<p class="story">${esc(ins.story.match(/^.*?[.!?](?:\s|$)/)?.[0] ?? ins.story)}</p><details class="sec" data-disclosure="${esc(sel)}:story"><summary>The full picture</summary><p class="note">${esc(ins.story)}</p></details>` : ''}
+    ${lvl >= 1 && ins.correction ? `<details class="sec" data-disclosure="${esc(sel)}:correction"><summary>What the metaphor hid</summary><div class="truth">${esc(ins.correction)}</div></details>` : ''}
+    <div class="focus-actions">
       <button class="btn" data-act="why" data-arg="${esc(sel)}">Why?</button>
-      <button class="btn" data-act="reveal" data-arg="depends_on">Depends on</button>
-      <button class="btn" data-act="reveal" data-arg="made_of">Made of</button>
-      <button class="btn" data-act="reveal" data-arg="used_by">Used by</button>
-      <button class="btn" data-act="reveal" data-arg="follow">Follow it</button>
-      <button class="btn" data-act="compare">Before / after</button>
-      <button class="btn" data-act="shallower" ${lvl === 0 ? 'disabled' : ''}>Lower level ↑</button>
       <button class="btn" data-act="deeper" ${lvl === 6 ? 'disabled' : ''}>Show deeper ↓</button>
+      <button class="btn small ghost" data-act="shallower" aria-label="Show shallower" ${lvl === 0 ? 'disabled' : ''}>↑</button>
     </div>
-    <div class="sub" style="margin-top:-4px">Showing level ${lvl}: ${esc(LEVEL_NAMES[lvl])}</div>
-    ${why}
-    ${renderRelations(app, ins)}
-    ${ins.sections.map((s, i) => renderSection(s, i === ins.sections.length - 1 && lvl > 0)).join('')}
     ${renderPoke(app, sel, w)}
-    <div class="sec"><h4>Concepts behind this</h4><div class="chips">${ins.concepts.map((c) => `<button class="chip" data-act="concept" data-arg="${c}">${esc(CONCEPTS[c]?.name ?? c)}</button>`).join('')}</div></div>
+    <details class="sec" data-disclosure="${esc(sel)}:relationships">
+      <summary>Explore connections</summary>
+      <div class="acts" role="group" aria-label="Ask about this object">
+        <button class="btn" data-act="reveal" data-arg="depends_on">Depends on</button>
+        <button class="btn" data-act="reveal" data-arg="made_of">Made of</button>
+        <button class="btn" data-act="reveal" data-arg="used_by">Used by</button>
+        <button class="btn" data-act="reveal" data-arg="follow">Follow it</button>
+        <button class="btn" data-act="compare">Before / after</button>
+      </div>
+      ${renderRelations(app, ins)}
+    </details>
+    ${why}
+    ${ins.sections.map(s => renderSection(s, `${sel}:${s.title}`)).join('')}
+    <details class="sec" data-disclosure="${esc(sel)}:concepts"><summary>Concepts behind this</summary><div class="chips">${ins.concepts.map((c) => `<button class="chip" data-act="concept" data-arg="${c}">${esc(CONCEPTS[c]?.name ?? c)}</button>`).join('')}</div></details>
   </div>`;
 }
 
@@ -64,17 +68,14 @@ function emptyState(app: App): string {
   const w = app.engine.world;
   const names = Object.values(w.containers).slice(0, 4);
   return `<div class="empty">
-    <h2>Click anything in the world</h2>
-    <p>Every object is real, down to the kernel. Pick one to see what it is, why it is in this state, what depends on it, and what it is made of.</p>
-    <p class="chips" style="margin:10px 0">
-      <button class="chip" data-act="select" data-arg="host">the whale (host)</button>
-      <button class="chip" data-act="select" data-arg="daemon:dockerd">Santa (dockerd)</button>
-      <button class="chip" data-act="select" data-arg="registry:hub">the harbor</button>
-      <button class="chip" data-act="select" data-arg="build:dockerfile">the shipyard</button>
-      ${names.map((c) => `<button class="chip" data-act="select" data-arg="container:${esc(c.name)}">container ${esc(c.name)}</button>`).join('')}
-    </p>
-    <p><b>Try:</b> select a container, then press <b>Show deeper</b> (or <kbd>]</kbd>): the shipping box dissolves into a process.</p>
-    <p style="color:var(--faint)">Bring your own AI: connect it (top right) and it can drive all of this while it teaches you.</p>
+    <h2>Follow your curiosity.</h2>
+    <p>Click an object to see what it does.</p>
+    <div class="chips" style="margin:16px 0">
+      ${names.map((c) => `<button class="chip" data-act="select" data-arg="container:${esc(c.name)}">${esc(c.name)} · container</button>`).join('')}
+      <button class="chip" data-act="select" data-arg="host">whale · your machine</button>
+      <button class="chip" data-act="select" data-arg="daemon:dockerd">Santa · the pilot</button>
+    </div>
+    <button class="btn" data-act="side" data-arg="concept">Browse Docker concepts →</button>
   </div>`;
 }
 
@@ -104,14 +105,13 @@ function renderRelations(app: App, ins: Inspection): string {
   return out ? `<div class="sec"><h4>Connections</h4>${out}</div>` : '';
 }
 
-function renderSection(s: Section, info = false): string {
+function renderSection(s: Section, key: string): string {
   const parts: string[] = [];
   if (s.rows) parts.push(`<dl class="kv">${s.rows.map(([k, v]) => `<dt>${esc(k)}</dt><dd>${esc(v)}</dd>`).join('')}</dl>`);
   if (s.lines) parts.push(`<div class="lines">${s.lines.map((l) => esc(l)).join('\n')}</div>`);
   if (s.code) parts.push(`<pre>${esc(s.code)}</pre>`);
   if (s.note) parts.push(`<div class="note">${esc(s.note)}</div>`);
-  void info;
-  return `<div class="sec ${s.tone === 'info' ? 'info' : ''}"><h4>${esc(s.title)}</h4>${parts.join('')}</div>`;
+  return `<details class="sec ${s.tone === 'info' ? 'info' : ''}" data-disclosure="${esc(key)}"><summary>${esc(s.title)}</summary>${parts.join('')}</details>`;
 }
 
 /** human controls: the same semantic actions the AI has */
@@ -163,9 +163,9 @@ function pokes(w: World, target: string): { label: string; action: Action; tip: 
 function renderPoke(app: App, sel: string, w: World): string {
   const list = pokes(w, sel);
   if (!list.length) return '';
-  return `<div class="sec"><h4>Poke it (what would you like to try?)</h4><div class="poke">${list
-    .map((p) => `<button class="btn small" title="${esc(p.tip)}" data-act="poke" data-arg='${esc(JSON.stringify({ action: p.action } as PokeArg))}'>${esc(p.label)}</button>`)
-    .join('')}</div></div>`;
+  const buttons = list.map((p) => `<button class="btn small" title="${esc(p.tip)}" data-act="poke" data-arg='${esc(JSON.stringify({ action: p.action } as PokeArg))}'>${esc(p.label)}</button>`);
+  return `<div class="sec"><h4>Try a change</h4><div class="poke">${buttons.slice(0, 2).join('')}</div>${buttons.length > 2 ? `<details data-disclosure="${esc(sel)}:actions"><summary>More experiments</summary><div class="poke">${buttons.slice(2).join('')}</div></details>` : ''}</div>`;
+
 }
 
 /* ================================================================ compare */
@@ -216,10 +216,10 @@ function renderConcept(app: App): string {
     ${exact ? `<div class="truth"><b>At level ${lvl}:</b> ${esc(exact)}</div>` : `<div class="truth"><b>At level ${lvl}:</b> ${esc(conceptAt(c, lvl))}</div>`}
     <div class="revealbar" role="group" aria-label="Reveal relationships">${modes.map(([m, l]) => `<button class="btn small" data-act="reveal" data-arg="${m}" aria-pressed="${mode === m}">${l}</button>`).join('')}</div>
     ${chains.length ? `<div class="sec"><h4>${mode === 'to_kernel' ? 'Down to the kernel' : 'Out to the ecosystem'}</h4>${chains.map((ch) => `<div class="chips" style="margin:4px 0">${ch.map((n) => `<button class="chip" data-act="concept" data-arg="${n}">${esc(CONCEPTS[n]?.name ?? n)}</button>`).join('<span style="color:var(--faint)">→</span>')}</div>`).join('')}</div>` : ''}
-    ${conceptGraph(c, sub)}
+    <details class="sec" data-disclosure="${esc(c.id)}:graph"><summary>Relationship map</summary>${conceptGraph(c, sub)}</details>
     <p class="note" style="color:var(--muted);font-size:12px">${esc(sub.caption)}${sub.truncated ? ` (${sub.truncated} more not shown, to keep this readable)` : ''}</p>
-    ${c.misconceptions.map((m) => `<div class="misc"><b>Common misconception.</b> ${esc(m)}</div>`).join('')}
-    <div class="sec"><h4>Why it exists</h4><div class="note" style="margin:0">${esc(c.why)}</div></div>
+    <details class="sec" data-disclosure="${esc(c.id)}:notes"><summary>Why it exists & common misconceptions</summary>${c.misconceptions.map((m) => `<div class="misc"><b>Common misconception.</b> ${esc(m)}</div>`).join('')}
+    <div class="sec"><h4>Why it exists</h4><div class="note" style="margin:0">${esc(c.why)}</div></div></details>
     ${c.experiments.filter((x) => SCENARIO_MAP[x]).length ? `<div class="sec"><h4>Try it</h4><div class="poke">${c.experiments.filter((x) => SCENARIO_MAP[x]).map((x) => `<button class="btn small" data-act="scenario-predict" data-arg="${x}" title="${esc(SCENARIO_MAP[x]!.whatIf)}">Predict: ${esc(SCENARIO_MAP[x]!.title)}</button>`).join('')}</div></div>` : ''}
     ${c.commands.length ? `<div class="sec"><h4>Commands</h4><div class="chips">${c.commands.map((x) => `<button class="chip mono" data-act="term-suggest" data-arg="${esc(x.startsWith('docker') && !x.includes('<') ? x : '')}" title="put it in the terminal">${esc(x)}</button>`).join('')}</div></div>` : ''}
     ${c.kernel.length ? `<div class="sec"><h4>Kernel primitives</h4><div class="chips">${c.kernel.map((x) => `<span class="chip mono" style="border-color:var(--kernel);color:var(--kernel)">${esc(x)}</span>`).join('')}</div></div>` : ''}
@@ -269,8 +269,8 @@ function conceptIndex(app: App): string {
   const groups = new Map<string, Concept[]>();
   for (const c of Object.values(CONCEPTS)) (groups.get(c.domain) ?? groups.set(c.domain, []).get(c.domain)!).push(c);
   const titles: Record<string, string> = { docker: 'Docker objects', engine: 'Engine internals', linux: 'Linux & kernel', oci: 'OCI standards', ecosystem: 'Wider ecosystem' };
-  return `<div class="empty"><h2>Concepts</h2><p>Select an object, or pick a concept. Relationships appear in context, one small neighbourhood at a time, never the whole graph at once.</p>
-  ${[...groups.entries()].map(([d, list]) => `<div class="sec"><h4>${esc(titles[d] ?? d)}</h4><div class="chips">${list.map((c) => `<button class="chip" data-act="concept" data-arg="${c.id}" style="border-color:${ROLE_COLOR[c.role]}55">${esc(c.name)}</button>`).join('')}</div></div>`).join('')}</div>`;
+  return `<div class="empty"><h2>Concepts</h2><p>Pick one idea. Follow its connections.</p>
+  ${[...groups.entries()].map(([d, list]) => `<details class="sec" data-disclosure="index:${esc(d)}" ${d === 'docker' ? 'open' : ''}><summary>${esc(titles[d] ?? d)}</summary><div class="chips">${list.map((c) => `<button class="chip" data-act="concept" data-arg="${c.id}" style="border-color:${ROLE_COLOR[c.role]}55">${esc(c.name)}</button>`).join('')}</div></details>`).join('')}</div>`;
 }
 
 /* ================================================================ progress */
