@@ -14,6 +14,8 @@
   "durable_objects": {
     "bindings": [{ "name": "LAB", "class_name": "Lab" }]
   },
+  "routes": [{ "pattern": "docker.hamdibouzidi.com", "custom_domain": true }],
+  "routes": [{ "pattern": "learndocker.hamdibouzidi.com", "custom_domain": true }],
   "migrations": [{ "tag": "v1", "new_sqlite_classes": ["Lab"] }],
   "vars": {
     // comma-separated extra origins allowed to open the browser socket; the

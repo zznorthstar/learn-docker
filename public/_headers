@@ -1,5 +1,6 @@
 # Cloudflare static-asset headers (served by the Worker's assets binding)
 /*
+  Cache-Control: no-transform
   X-Content-Type-Options: nosniff
   Referrer-Policy: no-referrer
   Permissions-Policy: camera=(), microphone=(), geolocation=(), interest-cohort=()
