@@ -1,0 +1,7 @@
+name: Idea or new experiment
+description: A concept, scenario or feature you would like
+labels: [enhancement]
+body:
+  - type: textarea
+    attributes: { label: What should it teach or do, description: "For a scenario: the question, and what real Docker would do." }
+    validations: { required: true }

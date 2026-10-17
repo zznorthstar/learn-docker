@@ -1,0 +1,11 @@
+name: Bug report
+description: Something is broken or the simulation disagrees with real Docker
+labels: [bug]
+body:
+  - type: textarea
+    attributes: { label: What happened, description: "What you did, what you expected, what you saw. For simulation issues, include what real Docker does." }
+    validations: { required: true }
+  - type: input
+    attributes: { label: Browser and device }
+  - type: input
+    attributes: { label: AI client (if MCP related), placeholder: "Claude Code, Cursor, ..." }

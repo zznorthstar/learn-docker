@@ -1,125 +1,134 @@
-# Whale Lab: Docker as a living world, taught by your own AI
+<div align="center">
 
-An interactive learning world for Docker. The world is the diagram. **The visitor brings their own AI**, which connects over MCP and drives the world while it teaches: revealing internals, breaking things on purpose, rewinding, tracing causes, and reacting to whatever the learner clicks.
+<img src="docs/brand/logo.svg" width="96" alt="Whale Lab logo">
 
-- No accounts. No hosted AI. No server-side lab state. A random lab id + secret live in the learner's browser.
-- The browser owns the world (a deterministic Docker simulation). A thin Cloudflare Worker + Durable Object only relays MCP calls to the right tab.
-- The same object reveals more truth at each of seven abstraction levels: story metaphor → Docker objects → engine internals → Linux processes → kernel primitives → OCI standards → the wider ecosystem. "The container is not a little VM" is a level-3 moment: the shipping box dissolves into a process.
+# Whale Lab
 
-![Level 0: the story metaphor, with a Compose app aboard](docs/world-level0.webp)
+**Docker, as a living world. Your own AI teaches it over MCP.**
 
-*Level 0 (story metaphor) → level 4 (kernel primitives, same containers) → a limit change causing an OOM crash loop, with its causal chain along the bottom:*
+[**Live demo →**](https://learndocker.hamdibouzidi.com) &nbsp;·&nbsp; [Architecture](docs/ARCHITECTURE.md) &nbsp;·&nbsp; [Contributing](CONTRIBUTING.md)
 
-![Level 4: kernel primitives](docs/world-level4.webp)
-![A memory-limit change and its causal chain](docs/world-oom-chain.webp)
+[![License: MIT](https://img.shields.io/badge/license-MIT-ffb454.svg)](LICENSE)
+![Tests](https://img.shields.io/badge/tests-113%20unit%20%C2%B7%209%20relay%20%C2%B7%2037%20e2e-3fb950)
+![MCP](https://img.shields.io/badge/MCP-Streamable%20HTTP-5a7fe0)
+![Runs on](https://img.shields.io/badge/runs%20on-Cloudflare%20Workers-f38020)
+
+<img src="docs/img/demo.gif" width="860" alt="Walking one scene from the story metaphor down to Linux processes, then triggering an OOM kill">
+
+</div>
+
+Whale Lab is an interactive Docker learning world. The whale is the host, Santa is `dockerd`, the reindeer crew are `containerd` and `runc`, and the shipping containers are containers. Switch the abstraction level and the same scene sheds the metaphor: at level 3 the shipping box dissolves into what it really is, a **process on the host**. A container is not a little VM.
+
+The twist: **there is no built-in tutor.** You connect your own AI (Claude Code, Cursor, Claude Desktop, any MCP client) and it drives the world while it teaches: breaking things on purpose, tracing causes, rewinding, quizzing you.
+
+- No accounts, no hosted AI, no server-side lab state.
+- The browser owns a deterministic Docker simulation. A thin Cloudflare Worker only relays MCP calls to your tab.
+- Seven levels of truth: **Story → Objects → Engine → Process → Kernel → OCI → Ecosystem.**
+
+## See it
+
+| | |
+|---|---|
+| ![Story level](docs/img/level0-shop.webp) **Level 0:** a cartoon, on purpose. | ![Process level](docs/img/level3-process.webp) **Level 3:** the box dissolves into a process. |
+| ![Kernel level](docs/img/level4-kernel.webp) **Level 4:** namespaces and cgroups, not magic. | ![OOM chain](docs/img/oom-causal-chain.webp) **Cause and effect:** a memory limit change and its crash loop. |
+| ![Terminal](docs/img/terminal-decomposition.webp) **A real-looking terminal** that explains each part of the command. | ![Scenarios](docs/img/scenarios.webp) **27 "what if…" experiments**, predict first, then watch. |
+
+<details><summary>Connect dialog and mobile</summary>
+
+<img src="docs/img/connect-your-ai.webp" width="620" alt="Connect your AI dialog"> <img src="docs/img/mobile.webp" width="220" alt="Mobile layout">
+</details>
+
+## Try it in 60 seconds
+
+1. Open **https://learndocker.hamdibouzidi.com**
+2. Press **Connect your AI**, then **Run the self-test** (Santa waves, proving the pipe works end to end).
+3. Add the endpoint to your AI client. For Claude Code:
+
+   ```bash
+   claude mcp add --transport http docker-world https://learndocker.hamdibouzidi.com/mcp \
+     --header "Authorization: Bearer <labId>.<secret>"
+   ```
+   The dialog shows your own key, plus configs for Cursor / VS Code, Claude Desktop and a paste-in prompt.
+4. Ask: *"Teach me why my container lost its data when I deleted it."*
+
+Your key is generated in your browser and never sent in a URL. See [security](#security-model).
+
+## What it teaches
+
+A container is a process · image vs container · lifecycle · Dockerfile, layers and build cache · volumes and persistence · networks, DNS, isolation · port publishing · `dockerd` / `containerd` / shim / `runc` · PID 1 and signals · namespaces · cgroups and the OOM killer · registries · Compose and health cascades · debugging · OCI standards · the Kubernetes/cloud bridge.
+
+Every one of 27 experiments carries a prediction whose stated answer is **machine-verified against the simulator** in tests, so the lab can't teach something its own world contradicts.
+
+## How it works
 
 ```
-USER'S AI ──MCP (HTTP, Bearer labId.secret)──▶ Worker /mcp ──▶ Lab Durable Object ──WebSocket──▶ BROWSER
-                                                  │ validates sha256(secret)        │   semantic world engine
-                                                  └ static site + /ws               │   ├─ causal events + timeline
-                                                                                    │   ├─ concept graph, scenarios
-learner clicks / terminal / lab dials ───────────────────────────────────────────▶ │   └─ projection ─▶ Rive (art) + SVG (relationships)
+YOUR AI ──MCP (HTTP, Bearer labId.secret)──▶ Worker /mcp ──▶ Lab Durable Object ──WebSocket──▶ YOUR BROWSER
+                                                                                               ├─ world engine (pure reducer, causal events, timeline)
+ you click / type / turn dials ──────────────────────────────────────────────────────────────▶ ├─ concept graph (70 concepts), scenarios
+                                                                                               └─ projection ─▶ Rive art + SVG relationships
 ```
 
-## Run it
+- **Semantic mutations only.** The AI says `run_container` or `set_resource_limit`; it can never set pixels or frames. The renderer decides what it looks like.
+- **Event-sourced.** Every change records what caused it, so you can rewind, step, branch and diff before/after.
+- **Rive does the art**, an SVG layer draws data-driven relationships, and real DOM buttons keep it keyboard and screen-reader accessible.
+
+Details: [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) · Rive internals: [rive/README.md](rive/README.md)
+
+### The 14 MCP tools
+
+`world_inspect` · `world_focus` · `world_mutate` (34 typed actions) · `world_run_scenario` · `world_set_view` · `world_set_overlay` · `world_compare` · `world_rewind` · `world_reset` · `world_connection_test` · `concept_inspect` · `concept_trace_relationship` · `lesson_check_understanding` · `lesson_get_progress`
+
+Tool descriptions double as the teacher's manual; the server also sends it in the MCP `initialize` instructions.
+
+## Run it locally
 
 ```bash
 npm install
-npm run dev:relay            # Worker + Durable Object on :8787 (RELAY_PORT=8799 npm run dev:relay if taken)
-npm run dev                  # Vite on :5173, proxies /mcp /ws to the relay (RELAY_PORT=… to match)
+npm run dev:relay     # Worker + Durable Object on :8787 (set RELAY_PORT if taken)
+npm run dev           # Vite on :5173, proxies /mcp and /ws to the relay
 ```
-Open the site, finish (or skip) the intro, press **Connect your AI**, and either run the built-in **self-test** or add the endpoint to your AI client. Easiest end-to-end check without an AI: the self-test button calls your own `/mcp` through the relay and Santa waves.
 
 ```bash
-npm run build                # typecheck + production bundle in dist/
-npm test                     # 113 unit tests (engine, projection, identity, hardening)
-npm run test:relay           # 9 tests: real workerd, MCP (incl. the official MCP SDK client) + browser socket
-npm run test:e2e             # 37 tests: real Chrome + Rive + Worker (builds first)
-npm run test:all
-npm run build:rive           # regenerate public/rive/docker-world.riv from rive/gen/*.mjs (needs the `rive` CLI)
-node tests/e2e/perf.mjs      # sizes, load timeline, CPU, fps, pause-when-hidden
+npm test              # 113 unit tests
+npm run test:relay    # real workerd + official MCP SDK client
+npm run test:e2e      # real Chrome, Rive, Worker (builds first)
+npm run build         # typecheck + production bundle in dist/
 ```
 
-## Connecting an AI
+Requires Node 22+. Rebuilding the Rive art (`npm run build:rive`) also needs the [`rive` CLI](https://rive.app); the compiled `.riv` is committed so you don't need it to run the app.
 
-One shared endpoint, header auth, no URL secrets:
+## Deploy your own
 
-```
-POST https://<your-site>/mcp
-Authorization: Bearer <labId>.<secret>      # shown (masked) in the Connect dialog
-```
-`labId` is public routing, `secret` is a 256-bit capability token; the relay stores only `sha256(secret)`. A lab id alone grants nothing. The browser registers its WebSocket by sending the secret in its **first message** (never in the URL), and the first browser to register a (lab, secret) pair claims the lab.
-
-Claude Code: `claude mcp add --transport http docker-world https://<site>/mcp --header "Authorization: Bearer <labId>.<secret>"`. Other clients: the Connect dialog has the JSON config, an `mcp-remote` bridge for stdio-only clients, and a prompt to paste. The server's `initialize` response carries the teaching manual (`instructions`), and each tool description documents purpose, effect, concepts, side effects, visuals and how to teach with it.
-
-**Connection test.** `world_connection_test` (or the self-test button) makes Santa visibly wave and shows "Your AI is connected". A green dot alone proves nothing, so the test makes the world react. If the tab is closed, tools return `world_offline` with instructions; reopening the same browser reconnects automatically.
-
-### MCP tool surface (14 tools, semantic only)
-
-| Tool | Purpose |
-|---|---|
-| `world_inspect` | Read: `overview`, `object`, `selected`, `events`, `user_activity`, `causal_trace`, `why`, `view`, `timeline`, `requests`, `logs`, `kernel` |
-| `world_focus` | Select/highlight, reveal relationships (`depends_on`, `depended_by`, `made_of`, `used_by`, `why`, `to_kernel`, `to_ecosystem`, `follow`), set level/region, caption |
-| `world_mutate` | One typed semantic action (34: `run_container`, `set_resource_limit`, `connect_network`, `build_image`, `edit_dockerfile`, `compose_stop_service`, `send_request`, `set_condition`, …) |
-| `world_run_scenario` | Built-in library (27), custom `setup`+`steps`, or `predict:true` |
-| `world_set_view` / `world_set_overlay` | Level, camera region + zoom, Lab mode, time flow; network / storage / process / kernel / resources / causality / dependencies overlays |
-| `world_compare` / `world_rewind` / `world_reset` | Before/after diff, timeline stepping, preset worlds |
-| `world_connection_test` | Santa waves |
-| `concept_inspect` / `concept_trace_relationship` | The knowledge graph (70 concepts): per-level text, misconceptions, experiments, commands, kernel primitives; `down_to_kernel`, `out_to_ecosystem`, `between` |
-| `lesson_check_understanding` / `lesson_get_progress` | Prediction cards (answer hidden until commit) and what the learner has actually explored |
-
-The AI can never set positions, opacity or frames; it only describes Docker-level actions. The renderer decides what that looks like.
-
-## Architecture
-
-| Layer | Where | Notes |
-|---|---|---|
-| Semantic world | `src/engine/types.ts`, `world.ts`, `catalog.ts` | Normalized JSON: host, daemons, images/layers, containers, networks, volumes, build cache, Compose, logs, requests. No visual data. |
-| Reducer + causal engine | `sim.ts`, `probe.ts` | `applyAction(world, action) → world'` is pure and deterministic. Every state change emits an event with `causedBy`. Realistic refusals (port allocated leaves the container `created`; volume in use; exec format error; OOM → restart-policy crash loop). |
-| Timeline | `engine.ts` | Event-sourced: persisted form is the op list; replay rebuilds every snapshot and event exactly. Rewind, step, branch-on-new-action, before/after diff (`diff.ts`). |
-| Knowledge | `concepts.ts`, `conceptgraph.ts`, `inspect.ts`, `derive.ts` | Per-level truth: process tree, namespaces, cgroup files, overlay mounts, veth/bridge/iptables, OCI `config.json`, image manifest, all derived from state. |
-| Experiments | `scenarios.ts` | 27 "what if…" scenarios; each carries a prediction whose stated answer is **machine-verified against the simulator** in tests. |
-| MCP | `shared/*.ts`, `src/engine/tools.ts`, `worker/` | Tools run in the browser; the Worker/DO is a rendezvous. |
-| Projection | `src/render/project.ts` | The only place that maps Docker state to visual inputs (numbers/bools/colours for Rive). |
-| Rendering | `src/render/riveWorld.ts`, `overlay.ts`, `camera.ts` | Rive draws characters, containers, whale and effects; an SVG layer draws relationships and the truth under the metaphor; real DOM buttons sit on top for keyboard/screen-reader access. |
-| UI | `src/ui/`, `src/app/` | Vanilla TypeScript (no framework). Inspector, concepts, timeline, causal events, terminal, lab dials, predictions, onboarding, connect. |
-
-**Why the split between Rive and SVG.** Rive does what it is best at (characters, state-machine reactions, abstraction dissolves, weather). Relationship lines, labels at each level and per-hop request traces are data-driven and need crisp text, so they are SVG over the same 1600×900 coordinates (the art generator writes `layout.generated.json` so the two can never drift).
-
-## Rive
-
-One file, `public/rive/docker-world.riv` (80 KB, vector only), authored as code in `rive/gen/` and compiled with the `rive` CLI. Details in [rive/README.md](rive/README.md). In short:
-
-- `World` artboard (whale, deck, harbor, shipyard, weather, internals) with a root view model; reusable **component** artboards `Cargo` (×6 slots), `Santa`, `Reindeer` (×2: foreman = containerd, runner = runc), each with its own state machine layers and view model, bound through nested view models.
-- Semantic logic stays out of Rive: the app writes `status`, `reveal`, `pressure`, `hasVolume`… and Rive crossfades.
-- Verified in the real web runtime with screenshots of every state (see `rive/gen/sheet.mjs`).
-
-## What it teaches (initial scope)
-
-A container is a process · image vs container · pull/run/stop/remove lifecycle · Dockerfile, layers and build cache · volumes and persistence (and what dies with the container) · networks, DNS, isolation · port publishing · dockerd / containerd / shim / runc · Linux process reality (PID 1, signals) · namespaces · cgroups and the OOM killer · registries · Compose and health cascades · debugging and inspection (request tracing, events, terminal) · OCI standards · the Kubernetes/cloud/CI bridge.
-
-## Accessibility, motion, responsiveness
-
-Every stage object is a real button with an accessible name; level, timeline, terminal and dials are keyboard-operable (`[` `]` level, `,` `.` timeline, `/` terminal, `0` reset camera, `Esc`). Meaning is never animation-only: status is text in the inspector, consequence strip and events, and actions are announced in a live region. `prefers-reduced-motion` (or the menu toggle) freezes the scene after each state change and skips sequences. axe-core WCAG 2 A/AA runs clean on five views. Narrow screens stack stage → overlays → consequence → inspector → dock and drop non-essential labels.
-
-## Deploying (Cloudflare)
-
-One Worker serves the static site, `/mcp` and `/ws`, with one SQLite-backed Durable Object per lab (stores only a hash and the live socket).
+One Worker serves the site, `/mcp` and `/ws`, with one SQLite-backed Durable Object per lab.
 
 ```bash
-npm run build
-npx wrangler login
-npm run deploy:relay        # wrangler deploy
+npm run build && npx wrangler login && npx wrangler deploy
 ```
-Add a custom route/domain in the dashboard or `wrangler.jsonc`. `public/_headers` ships a strict CSP (only `wasm-unsafe-eval` for the Rive runtime), nosniff, no-referrer and cache rules. Cost profile: the static assets are free-tier friendly; Durable Objects bill only while a lab is active (WebSocket hibernation is used; keep-alive pings are auto-answered without waking the object). If abused, put Cloudflare rate limiting/Turnstile in front of `/ws` (see Limitations).
+Add your domain under `routes` in `wrangler.jsonc`. Cloudflare Workers Builds also works from this repo with build command `npm run build` and deploy command `npx wrangler deploy`.
 
-## Verified
+## Security model
 
-See the **Verification** section of the final handoff: unit (113), relay (9), end-to-end (37, real Chrome + real workerd), axe audit, performance measurements and a `wrangler deploy --dry-run`.
+- The lab id is public routing; the **secret** is a 256-bit capability token sent only in the `Authorization` header (and in the browser socket's first message), never in a URL.
+- The relay stores `sha256(secret)` only. The first browser to present a pair claims the lab.
+- Strict CSP (`wasm-unsafe-eval` only for the Rive runtime), `nosniff`, no-referrer. axe-core WCAG 2 A/AA is clean on five views.
 
-## Limitations worth knowing
+Report vulnerabilities per [SECURITY.md](SECURITY.md).
 
-- It is a faithful **simulation**, not a Docker daemon (by design). One sample Dockerfile (a Node API), one Compose project (`shop`), a fixed image catalogue. A live-Docker adapter is architected for (everything flows through the typed `Action` reducer) but not built.
-- Six deck slots; extra containers show as an overflow chip (still fully inspectable).
-- The relay has no rate limiting. Lab ids are 50 bits and secrets 256 bits, so guessing is not a concern, but anyone can open sockets for random labs; add Cloudflare rate limiting before a large public launch.
-- Rive was verified in headless Chrome with software GL (60 fps, ~68% main-thread busy; pauses to 0% when hidden). On real GPUs the cost is lower; the app lowers detail automatically if frames fall behind. No real-phone test was possible.
+## Status and limitations
+
+First public version. Be aware:
+
+- It is a faithful **simulation**, not a Docker daemon. One sample Dockerfile, one Compose project, a fixed image catalogue. A live-Docker adapter is a natural fit (everything flows through one typed reducer) but is not built.
+- Six deck slots; extra containers collapse into an overflow chip.
+- The relay has no rate limiting yet.
+- Rive performance was measured in headless software GL only; not yet on real phones or GPUs.
+
+See the [roadmap](ROADMAP.md) for what's next.
+
+## Contributing
+
+Issues and PRs are welcome. Start with [CONTRIBUTING.md](CONTRIBUTING.md); please follow the [Code of Conduct](CODE_OF_CONDUCT.md).
+
+## License
+
+[MIT](LICENSE) © Hamdi ZYG-ZXG

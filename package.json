@@ -1,9 +1,31 @@
 {
   "name": "docker-world",
   "version": "0.1.0",
+  "description": "Interactive Docker learning world that your own AI teaches over MCP",
+  "license": "MIT",
+  "author": "Hamdi ZYG-ZXG",
+  "homepage": "https://learndocker.hamdibouzidi.com",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/zznorthstar/learn-docker.git"
+  },
+  "bugs": {
+    "url": "https://github.com/zznorthstar/learn-docker/issues"
+  },
+  "keywords": [
+    "docker",
+    "mcp",
+    "model-context-protocol",
+    "rive",
+    "cloudflare-workers",
+    "durable-objects",
+    "education",
+    "interactive",
+    "simulation",
+    "containers"
+  ],
   "private": true,
   "type": "module",
-  "description": "An interactive learning world for Docker, taught by your own AI over MCP.",
   "scripts": {
     "dev": "vite",
     "dev:relay": "wrangler dev --port 8787",

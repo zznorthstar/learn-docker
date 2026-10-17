@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" role="img" aria-label="Whale Lab logo">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#16204a"/><stop offset="1" stop-color="#070a14"/></linearGradient>
+    <linearGradient id="body" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#5a7fe0"/><stop offset="1" stop-color="#2a3f94"/></linearGradient>
+  </defs>
+  <rect width="256" height="256" rx="56" fill="url(#bg)"/>
+  <circle cx="190" cy="62" r="22" fill="#ffb454" opacity=".95"/>
+  <path d="M34 150c0-40 36-66 82-66 38 0 62 18 78 44 8 12 20 14 30 10-2 22-18 36-38 38-18 2-24 14-44 18-48 8-108-2-108-44z" fill="url(#body)"/>
+  <path d="M196 132c10 8 22 6 30-2-2 22-18 36-38 38z" fill="#3a56b8"/>
+  <g fill="#ffb454"><rect x="72" y="62" width="30" height="22" rx="3"/><rect x="106" y="54" width="30" height="30" rx="3" fill="#ff8f4a"/><rect x="140" y="64" width="30" height="20" rx="3"/></g>
+  <g stroke="#070a14" stroke-opacity=".35" stroke-width="2"><path d="M87 62v22M121 54v30M155 64v20"/></g>
+  <circle cx="82" cy="136" r="6" fill="#070a14"/><circle cx="84" cy="134" r="2" fill="#fff"/>
+  <path d="M96 164c24 8 54 8 80-2" stroke="#9fb6f5" stroke-width="4" stroke-linecap="round" fill="none" opacity=".7"/>
+</svg>
